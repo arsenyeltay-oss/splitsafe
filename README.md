@@ -2,7 +2,7 @@
 
 > **BNPL isn't the problem. Flying blind is.**
 
-**Live demo:** _add the Vercel URL here_ · no sign-up: click **Try it with sample data**.
+**Live demo: [splitsafe-phi.vercel.app](https://splitsafe-phi.vercel.app)** · no sign-up: click **Try it with sample data**.
 
 ![Calendar with headline cards](docs/calendar.png)
 
