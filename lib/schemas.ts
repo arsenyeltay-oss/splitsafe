@@ -38,11 +38,27 @@ export const cashProfileSchema = z.object({
   buffer: money,
 });
 
+export const subscriptionSchema = z.object({
+  plan: z.literal("plus"),
+  interval: z.enum(["monthly", "annual"]),
+  since: isoDate,
+  /** Bought through the test-mode checkout: no real money moved. */
+  testMode: z.boolean(),
+});
+
 export const appStateSchema = z.object({
   version: z.literal(1),
   plans: z.array(planSchema),
   profile: cashProfileSchema.nullable(),
   isSample: z.boolean(),
+  /** Day the stored balance refers to; a later visit triggers a check-in. */
+  asOf: isoDate.nullable().default(null),
+  checkIns: z.array(z.object({ date: isoDate, paid: z.number().int(), missed: z.number().int() })).default([]),
+  subscription: subscriptionSchema.nullable().default(null),
+  /** Free-tier usage counter, reset each calendar month ("YYYY-MM"). */
+  usage: z.object({ month: z.string(), affordChecks: z.number().int() }).default({ month: "", affordChecks: 0 }),
 });
+
+export type Subscription = z.infer<typeof subscriptionSchema>;
 
 export type AppState = z.infer<typeof appStateSchema>;

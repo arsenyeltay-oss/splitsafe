@@ -10,3 +10,4 @@ export * from "./rescue";
 export * from "./providers";
 export * from "./format";
 export * from "./fixes";
+export * from "./checkin";

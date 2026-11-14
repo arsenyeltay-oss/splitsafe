@@ -2,10 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { CashProfile, Plan } from "@/lib/engine";
-import { appStateSchema, type AppState } from "@/lib/schemas";
+import { appStateSchema, type AppState, type Subscription } from "@/lib/schemas";
 import { STORAGE_KEY } from "@/lib/storage-key";
+import { localToday } from "@/lib/ui-format";
 
-export const EMPTY_STATE: AppState = { version: 1, plans: [], profile: null, isSample: false };
+export const EMPTY_STATE: AppState = {
+  version: 1,
+  plans: [],
+  profile: null,
+  isSample: false,
+  asOf: null,
+  checkIns: [],
+  subscription: null,
+  usage: { month: "", affordChecks: 0 },
+};
+
+/** Free plan: this many "Can I afford this?" checks per calendar month. */
+export const FREE_AFFORD_CHECKS = 3;
+const thisMonth = () => localToday().slice(0, 7);
 
 function load(): AppState {
   try {
@@ -58,10 +72,35 @@ export function useAppState() {
         plans: s.plans.some((p) => p.id === plan.id) ? s.plans.map((p) => (p.id === plan.id ? plan : p)) : [...s.plans, plan],
       })),
     deletePlan: (id: string) => update((s) => ({ ...s, plans: s.plans.filter((p) => p.id !== id) })),
-    setProfile: (profile: CashProfile) => update((s) => ({ ...s, profile })),
+    setProfile: (profile: CashProfile) => update((s) => ({ ...s, profile, asOf: localToday() })),
     replaceAll: (next: AppState) => update(() => next),
     reset: () => update(() => EMPTY_STATE),
+    /** Saves a confirmed weekly check-in. */
+    checkIn: (profile: CashProfile, plans: Plan[], paid: number, missed: number) =>
+      update((s) => {
+        const date = localToday();
+        return { ...s, profile, plans, asOf: date, checkIns: [...s.checkIns, { date, paid, missed }] };
+      }),
+    startPlus: (interval: Subscription["interval"]) =>
+      update((s) => ({ ...s, subscription: { plan: "plus", interval, since: localToday(), testMode: true } })),
+    cancelPlus: () => update((s) => ({ ...s, subscription: null })),
+    /** Counts one affordability check; returns nothing, read `affordChecksLeft` for the limit. */
+    recordAffordCheck: () =>
+      update((s) => {
+        const month = thisMonth();
+        const used = s.usage.month === month ? s.usage.affordChecks : 0;
+        return { ...s, usage: { month, affordChecks: used + 1 } };
+      }),
   };
 }
 
 export type AppStore = ReturnType<typeof useAppState>;
+
+export const isPlus = (s: AppState): boolean => s.subscription !== null;
+
+/** Remaining free checks this month (Infinity on Plus). */
+export function affordChecksLeft(s: AppState): number {
+  if (isPlus(s)) return Infinity;
+  const used = s.usage.month === thisMonth() ? s.usage.affordChecks : 0;
+  return Math.max(0, FREE_AFFORD_CHECKS - used);
+}
