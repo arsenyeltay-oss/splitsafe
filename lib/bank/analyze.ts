@@ -194,7 +194,7 @@ function detectPlans(bnpl: { txn: BankTxn; provider: ProviderId }[], idPrefix: s
         totalAmount: roundMoney(amount * 4),
         apr: null,
         installments: [...paid, ...remaining],
-        source: "parsed",
+        source: "statement",
         confidence: "medium",
         missingFields: merchant ? ["remaining dates are estimated (Pay in 4 = every 2 weeks) — check them"] : ["merchant", "remaining dates are estimated — check them"],
       });
@@ -206,7 +206,7 @@ function detectPlans(bnpl: { txn: BankTxn; provider: ProviderId }[], idPrefix: s
         totalAmount: null,
         apr: null,
         installments: [...paid, { dueDate: "", amount, status: "upcoming" }],
-        source: "parsed",
+        source: "statement",
         confidence: "low",
         missingFields: ["purchase total", "remaining payments (not in a bank statement)"],
       });

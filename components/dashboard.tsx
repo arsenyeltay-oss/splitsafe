@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { addDays, daysBetween } from "@/lib/engine";
 import type { CashProfile, FixAction, Plan } from "@/lib/engine";
 import { samplePlans, sampleProfile } from "@/lib/sample-data";
@@ -34,6 +34,7 @@ export function Dashboard() {
   const [today, setToday] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("calendar");
   const [importRequest, setImportRequest] = useState(0);
+  const clearImportRequest = useCallback(() => setImportRequest(0), []);
   const openBankImport = () => {
     setTab("plans");
     setImportRequest((n) => n + 1);
@@ -257,6 +258,7 @@ export function Dashboard() {
             today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()}
             onImportBank={importBank}
             importRequest={importRequest}
+            onImportRequestHandled={clearImportRequest}
             isSampleData={state.isSample} />
         )}
         {tab === "cash" && (

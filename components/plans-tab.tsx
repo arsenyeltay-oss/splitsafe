@@ -23,6 +23,7 @@ export function PlansTab({
   onLoadSample,
   onImportBank,
   importRequest,
+  onImportRequestHandled,
   isSampleData,
 }: {
   plans: Plan[];
@@ -37,15 +38,21 @@ export function PlansTab({
   onImportBank: (profile: CashProfile, plans: Plan[]) => void;
   /** Bumped by the dashboard's "Import bank statement" shortcut to open the importer. */
   importRequest: number;
+  onImportRequestHandled: () => void;
   /** Sample plans are replaced by an import, so they don't count as already known. */
   isSampleData: boolean;
 }) {
   const [editing, setEditing] = useState<PlanDraft | null>(null);
   const [showProblems, setShowProblems] = useState(false);
-  const [mode, setMode] = useState<"none" | "paste" | "bank">(importRequest > 0 ? "bank" : "none");
+  const [mode, setMode] = useState<"none" | "paste" | "bank">("none");
+  // The dashboard's shortcut asks once; we open the importer and tell it the request was handled,
+  // so coming back to this tab later doesn't reopen it.
   useEffect(() => {
-    if (importRequest > 0) setMode("bank");
-  }, [importRequest]);
+    if (importRequest > 0) {
+      setMode("bank");
+      onImportRequestHandled();
+    }
+  }, [importRequest, onImportRequestHandled]);
   const pasting = mode !== "none";
 
   const startEdit = (d: PlanDraft) => {
@@ -155,6 +162,7 @@ function PlanCard({ plan, today, onEdit, onDelete }: { plan: Plan; today: ISODat
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="teal">{rule.name}</Badge>
             {plan.source === "parsed" && <Badge>from email</Badge>}
+            {plan.source === "statement" && <Badge>from bank statement</Badge>}
           </div>
           <h3 className="mt-2 text-lg font-semibold text-slate-900">{plan.merchant || "Purchase"}</h3>
           <p className="text-sm text-slate-600">

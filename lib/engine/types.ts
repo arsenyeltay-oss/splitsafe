@@ -18,7 +18,8 @@ export interface Plan {
   totalAmount: number;
   apr?: number | null;
   installments: Installment[];
-  source: "parsed" | "manual";
+  /** parsed = from a pasted email, statement = from a bank statement import. */
+  source: "parsed" | "statement" | "manual";
 }
 
 export type PayFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";

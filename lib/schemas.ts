@@ -18,7 +18,7 @@ export const planSchema = z.object({
   totalAmount: money,
   apr: z.number().finite().min(0).max(100).nullable().optional(),
   installments: z.array(installmentSchema),
-  source: z.enum(["parsed", "manual"]),
+  source: z.enum(["parsed", "statement", "manual"]),
 });
 
 export const billSchema = z.object({
