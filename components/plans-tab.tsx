@@ -6,6 +6,7 @@ import type { CashProfile, ISODate, Plan } from "@/lib/engine";
 import { draftProblems, draftToPlan, emptyDraft, hasProblems, planToDraft, type PlanDraft } from "@/lib/plan-draft";
 import { formatDate, formatMoney } from "@/lib/ui-format";
 import { PasteEmails } from "./paste-emails";
+import { BankImport } from "./bank-import";
 import { PayoffPlanner } from "./payoff-planner";
 import { PlanEditor } from "./plan-editor";
 import { Badge, Button, Card, EmptyState, Modal } from "./ui";
@@ -20,6 +21,7 @@ export function PlansTab({
   onAdd,
   onDelete,
   onLoadSample,
+  onImportBank,
 }: {
   plans: Plan[];
   profile: CashProfile | null;
@@ -30,10 +32,12 @@ export function PlansTab({
   onAdd: (plans: Plan[]) => void;
   onDelete: (id: string) => void;
   onLoadSample: () => void;
+  onImportBank: (profile: CashProfile, plans: Plan[]) => void;
 }) {
   const [editing, setEditing] = useState<PlanDraft | null>(null);
   const [showProblems, setShowProblems] = useState(false);
-  const [pasting, setPasting] = useState(false);
+  const [mode, setMode] = useState<"none" | "paste" | "bank">("none");
+  const pasting = mode !== "none";
 
   const startEdit = (d: PlanDraft) => {
     setShowProblems(false);
@@ -50,8 +54,11 @@ export function PlansTab({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => setPasting((v) => !v)} variant={pasting ? "secondary" : "primary"}>
-          {pasting ? "Close email paste" : "Paste confirmation emails"}
+        <Button onClick={() => setMode(mode === "bank" ? "none" : "bank")} variant={mode === "bank" ? "secondary" : "primary"}>
+          {mode === "bank" ? "Close bank import" : "🏦 Import bank statement"}
+        </Button>
+        <Button onClick={() => setMode(mode === "paste" ? "none" : "paste")} variant="secondary">
+          {mode === "paste" ? "Close email paste" : "Paste confirmation emails"}
         </Button>
         <Button variant="secondary" onClick={() => startEdit(emptyDraft())}>
           Add a plan manually
@@ -62,23 +69,38 @@ export function PlansTab({
         <PayoffPlanner profile={profile} plans={plans} today={today} isPlus={isPlus} onNeedPlus={onNeedPlus} />
       )}
 
-      {pasting && (
+      {mode === "bank" && (
+        <BankImport
+          today={today}
+          buffer={profile?.buffer ?? 100}
+          onApply={(p, imported) => {
+            onImportBank(p, imported);
+            setMode("none");
+          }}
+          onCancel={() => setMode("none")}
+        />
+      )}
+
+      {mode === "paste" && (
         <PasteEmails
           today={today}
           onSave={(saved) => {
             onAdd(saved);
-            setPasting(false);
+            setMode("none");
           }}
           onManual={() => {
-            setPasting(false);
+            setMode("none");
             startEdit(emptyDraft());
           }}
         />
       )}
 
       {plans.length === 0 && !pasting ? (
-        <EmptyState title="No plans yet" body="Paste a Klarna, Affirm, Afterpay, PayPal, Zip or Sezzle confirmation email, or add a plan by hand.">
-          <Button onClick={() => setPasting(true)}>Paste emails</Button>
+        <EmptyState title="No plans yet" body="Import a bank statement (we find BNPL payments automatically, on your device), paste a confirmation email, or add a plan by hand.">
+          <Button onClick={() => setMode("bank")}>Import bank statement</Button>
+          <Button variant="secondary" onClick={() => setMode("paste")}>
+            Paste emails
+          </Button>
           <Button variant="secondary" onClick={onLoadSample}>
             Try with sample data
           </Button>
