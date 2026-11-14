@@ -85,6 +85,21 @@ describe("statement analysis", () => {
     expect(analysis.plans.some((p) => p.provider === "affirm")).toBe(false);
   });
 
+  it("the sample statement looks like a real account: checking never sits deep in the red", () => {
+    const txns = parseStatement(sampleStatementCsv(TODAY)).txns;
+    expect(Math.min(...txns.map((t) => t.balance!))).toBeGreaterThanOrEqual(0);
+    expect(txns[0].balance).toBe(380);
+    expect(txns.some((t) => /TRANSFER TO SAV/.test(t.description))).toBe(true);
+  });
+
+  it("transfers to your own savings are neither bills nor everyday spending", () => {
+    const csv =
+      "Date,Description,Amount\n09/05/2026,ONLINE TRANSFER TO SAV 1234,-300\n10/05/2026,ONLINE TRANSFER TO SAV 1234,-300\n11/05/2026,ONLINE TRANSFER TO SAV 1234,-300\n";
+    const a = analyzeStatement(parseStatement(csv).txns, TODAY, "x");
+    expect(a.bills).toEqual([]);
+    expect(a.everydayPerMonth).toBe(0);
+  });
+
   it("a monthly BNPL plan leaves the total and remaining payments to the user", () => {
     const csv = "Date,Description,Amount\n09/05/2026,AFFIRM* PELOTON,-67.42\n10/05/2026,AFFIRM* PELOTON,-67.42\n";
     const [plan] = analyzeStatement(parseStatement(csv).txns, TODAY, "x").plans;

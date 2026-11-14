@@ -74,13 +74,40 @@ export function sampleStatementCsv(today: ISODate, days = 75): string {
     if (rand() < 0.08) rows.push({ date: d, description: "AMAZON MKTPL*2K4LQ1", amount: -roundMoney(12 + rand() * 40) });
   }
 
-  // Running balance that ends at the persona's current balance.
+  // Like most people with a surplus, Sarah moves part of each paycheck to savings, keeping just
+  // enough in checking to cover everything until later paychecks with a small cushion. Worked out
+  // backwards from today's balance so every pay period stays above the cushion.
+  const CUSHION = 60;
   rows.sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount);
-  let balance = roundMoney(profile.balance - rows.reduce((s, r) => s + r.amount, 0));
-  const withBalance = rows.map((r) => {
-    balance = roundMoney(balance + r.amount);
-    return { ...r, balance };
+  const payIdx = rows.flatMap((r, i) => (r.amount > 0 ? [i] : []));
+  // Segments: before the first paycheck, then from each paycheck (exclusive) to the next.
+  const bounds = [-1, ...payIdx, rows.length];
+  const seg = bounds.slice(0, -1).map((b, k) => {
+    let run = 0;
+    let low = 0;
+    for (let i = b + 1; i < bounds[k + 1]; i++) low = Math.min(low, (run = roundMoney(run + rows[i].amount)));
+    return { net: run, low };
   });
+  // need[k]: the minimum balance at the start of segment k (after its paycheck and transfer).
+  const last = seg.length - 1;
+  const need: number[] = Array(seg.length);
+  need[last] = roundMoney(profile.balance - seg[last].net);
+  for (let k = last - 1; k >= 0; k--) {
+    const pay = rows[payIdx[k]].amount;
+    need[k] = roundMoney(Math.max(CUSHION - seg[k].low, need[k + 1] - seg[k].net - pay));
+  }
+
+  let balance = need[0];
+  const withBalance: (Row & { balance: number })[] = [];
+  const push = (r: Row) => withBalance.push({ ...r, balance: (balance = roundMoney(balance + r.amount)) });
+  for (let k = 0; k < seg.length; k++) {
+    if (k > 0) {
+      push(rows[payIdx[k - 1]]);
+      const transfer = roundMoney(balance - need[k]);
+      if (transfer > 0) push({ date: rows[payIdx[k - 1]].date, description: "ONLINE TRANSFER TO SAV XXXXXX4821", amount: -transfer });
+    }
+    for (let i = bounds[k] + 1; i < bounds[k + 1]; i++) push(rows[i]);
+  }
 
   const lines = ["Details,Posting Date,Description,Amount,Type,Balance,Check or Slip #"];
   for (const r of [...withBalance].reverse()) {

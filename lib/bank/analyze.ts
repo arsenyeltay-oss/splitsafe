@@ -17,6 +17,8 @@ const BNPL_PATTERNS: [ProviderId, RegExp][] = [
   ["paypal", /PAYPAL.*(PAY ?IN ?4|INSTAL|PI4)|PAY IN 4/i],
 ];
 const PAYROLL = /PAYROLL|DIR(ECT)? ?DEP|SALARY|PAYCHECK|\bPAYRL\b/i;
+/** Moving money between your own accounts isn't income or spending. */
+const OWN_TRANSFER = /TRANSFER (TO|FROM) (SAV|SAVINGS|CHK|CHECKING)|TO SAVINGS|FROM SAVINGS/i;
 const ESSENTIAL = /RENT|MORTGAGE|LANDLORD|PROPERTY|APARTMENT|APTS|ELECTRIC|POWER|ENERGY|WATER|UTILIT|GAS CO|INSURANCE|INSUR|GEICO|PROGRESSIVE|STATE FARM|ALLSTATE|VERIZON|AT&T|\bATT\b|T-MOBILE|TMOBILE|COMCAST|XFINITY|SPECTRUM|INTERNET|PHONE|STUDENT LOAN|CAR PAYMENT|AUTO LOAN|DAYCARE|CHILDCARE|GROCER|KROGER|SAFEWAY|WALMART|COSTCO|ALDI|PUBLIX|TRADER JOE/i;
 
 export function bnplProvider(description: string): ProviderId | null {
@@ -217,7 +219,7 @@ export function analyzeStatement(txns: BankTxn[], today: ISODate, idPrefix = `ba
   const sorted = [...txns].sort((a, b) => a.date.localeCompare(b.date));
   const tagged = txns.map((t) => ({ txn: t, provider: bnplProvider(t.description) }));
   const bnpl = tagged.filter((x): x is { txn: BankTxn; provider: ProviderId } => x.provider !== null && x.txn.amount < 0);
-  const other = tagged.filter((x) => x.provider === null).map((x) => x.txn);
+  const other = tagged.filter((x) => x.provider === null && !OWN_TRANSFER.test(x.txn.description)).map((x) => x.txn);
 
   const debits = other.filter((t) => t.amount < 0);
   const bills = detectBills(debits);
@@ -232,7 +234,7 @@ export function analyzeStatement(txns: BankTxn[], today: ISODate, idPrefix = `ba
     balance: latestBalance(txns),
     paycheck: detectPaycheck(other.filter((t) => t.amount > 0), today),
     bills,
-    everydayPerMonth: spanDays >= 28 ? roundMoney((-variable.reduce((s, t) => s + t.amount, 0) / spanDays) * (365.25 / 12)) : 0,
+    everydayPerMonth: spanDays >= 28 ? Math.max(0, roundMoney((-variable.reduce((s, t) => s + t.amount, 0) / spanDays) * (365.25 / 12))) : 0,
     plans: detectPlans(bnpl, idPrefix),
   };
 }
