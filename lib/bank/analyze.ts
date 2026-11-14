@@ -238,3 +238,14 @@ export function analyzeStatement(txns: BankTxn[], today: ISODate, idPrefix = `ba
     plans: detectPlans(bnpl, idPrefix),
   };
 }
+
+/**
+ * True when a plan found in a statement is one the user already has: same provider, same merchant,
+ * and at least one payment with the same date and amount. Used so re-importing a newer statement
+ * only adds plans that are actually new.
+ */
+export function isSameBnplPlan(draft: PlanDraft, plan: { provider: string; merchant: string; installments: { dueDate: string; amount: number }[] }): boolean {
+  if (draft.provider !== plan.provider) return false;
+  if (draft.merchant.trim().toLowerCase() !== plan.merchant.trim().toLowerCase()) return false;
+  return draft.installments.some((i) => i.dueDate && plan.installments.some((j) => j.dueDate === i.dueDate && j.amount === i.amount));
+}

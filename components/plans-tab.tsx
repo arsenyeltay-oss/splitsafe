@@ -23,6 +23,7 @@ export function PlansTab({
   onLoadSample,
   onImportBank,
   importRequest,
+  isSampleData,
 }: {
   plans: Plan[];
   profile: CashProfile | null;
@@ -36,6 +37,8 @@ export function PlansTab({
   onImportBank: (profile: CashProfile, plans: Plan[]) => void;
   /** Bumped by the dashboard's "Import bank statement" shortcut to open the importer. */
   importRequest: number;
+  /** Sample plans are replaced by an import, so they don't count as already known. */
+  isSampleData: boolean;
 }) {
   const [editing, setEditing] = useState<PlanDraft | null>(null);
   const [showProblems, setShowProblems] = useState(false);
@@ -79,6 +82,7 @@ export function PlansTab({
         <BankImport
           today={today}
           buffer={profile?.buffer ?? 100}
+          existingPlans={isSampleData ? [] : plans}
           onApply={(p, imported) => {
             onImportBank(p, imported);
             setMode("none");

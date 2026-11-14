@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { addDays } from "@/lib/engine";
+import { addDays, PROVIDERS } from "@/lib/engine";
 import type { Bill, CashProfile, ISODate, PayFrequency, Plan } from "@/lib/engine";
-import { analyzeStatement, type StatementAnalysis } from "@/lib/bank/analyze";
+import { analyzeStatement, isSameBnplPlan, type StatementAnalysis } from "@/lib/bank/analyze";
 import { parseStatement } from "@/lib/bank/csv";
 import { sampleStatementCsv } from "@/lib/bank/sample-statement";
 import { draftToPlan, type PlanDraft } from "@/lib/plan-draft";
@@ -32,11 +32,14 @@ interface BillRow extends Bill {
 export function BankImport({
   today,
   buffer,
+  existingPlans,
   onApply,
   onCancel,
 }: {
   today: ISODate;
   buffer: number;
+  /** The user's current plans: ones found again in the statement aren't added twice. */
+  existingPlans: Plan[];
   onApply: (profile: CashProfile, plans: Plan[]) => void;
   onCancel: () => void;
 }) {
@@ -49,6 +52,7 @@ export function BankImport({
   const [nextPayday, setNextPayday] = useState(addDays(today, 7));
   const [bills, setBills] = useState<BillRow[]>([]);
   const [drafts, setDrafts] = useState<PlanDraft[]>([]);
+  const [known, setKnown] = useState<PlanDraft[]>([]);
   const [showProblems, setShowProblems] = useState(false);
 
   const load = (text: string, fileName: string) => {
@@ -78,7 +82,8 @@ export function BankImport({
             }))
           : []),
       ]);
-      setDrafts(analysis.plans);
+      setDrafts(analysis.plans.filter((d) => !existingPlans.some((p) => isSameBnplPlan(d, p))));
+      setKnown(analysis.plans.filter((d) => existingPlans.some((p) => isSameBnplPlan(d, p))));
       setShowProblems(true);
     } catch (e) {
       setResult(null);
@@ -231,7 +236,19 @@ export function BankImport({
       </section>
 
       <section className="mt-6">
-        <h3 className="text-sm font-semibold text-slate-800">BNPL plans found in your payments ({drafts.length})</h3>
+        <h3 className="text-sm font-semibold text-slate-800">
+          New BNPL plans found in your payments ({drafts.length})
+        </h3>
+        {known.length > 0 && (
+          <ul className="mt-2 flex flex-col gap-1 text-sm text-slate-600">
+            {known.map((d) => (
+              <li key={d.id} className="flex items-center gap-2">
+                <Badge tone="neutral">already in your plans</Badge>
+                {PROVIDERS[d.provider || "other"].name} · {d.merchant || "Purchase"} · {formatMoney(d.installments[0]?.amount ?? 0)} payments
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="mt-1 text-xs text-slate-500">
           A statement only shows payments that already happened. A brand-new plan with no payment yet won&apos;t be here, so paste its confirmation email on the Plans tab.
         </p>

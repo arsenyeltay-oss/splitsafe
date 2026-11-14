@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "@/lib/engine";
-import { analyzeStatement, bnplProvider, merchantKey, payeeName } from "./analyze";
+import { analyzeStatement, bnplProvider, isSameBnplPlan, merchantKey, payeeName } from "./analyze";
 import { parseBankDate, parseCsv, parseMoney, parseStatement } from "./csv";
 import { sampleStatementCsv } from "./sample-statement";
 
@@ -98,6 +98,14 @@ describe("statement analysis", () => {
     const a = analyzeStatement(parseStatement(csv).txns, TODAY, "x");
     expect(a.bills).toEqual([]);
     expect(a.everydayPerMonth).toBe(0);
+  });
+
+  it("recognises plans the user already has, so a newer statement only adds new ones", () => {
+    const [klarna] = analysis.plans.filter((p) => p.provider === "klarna");
+    const existing = { provider: "klarna", merchant: "Nike", installments: klarna.installments.filter((i) => i.status === "paid").map((i) => ({ dueDate: i.dueDate, amount: i.amount ?? 0 })) };
+    expect(isSameBnplPlan(klarna, existing)).toBe(true);
+    expect(isSameBnplPlan(klarna, { ...existing, merchant: "Adidas" })).toBe(false);
+    expect(isSameBnplPlan(klarna, { ...existing, installments: [{ dueDate: "2020-01-01", amount: 40 }] })).toBe(false);
   });
 
   it("a monthly BNPL plan leaves the total and remaining payments to the user", () => {

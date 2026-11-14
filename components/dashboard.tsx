@@ -256,7 +256,8 @@ export function Dashboard() {
             onNeedPlus={() => setPaywall(PLUS_PITCH)}
             today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()}
             onImportBank={importBank}
-            importRequest={importRequest} />
+            importRequest={importRequest}
+            isSampleData={state.isSample} />
         )}
         {tab === "cash" && (
           <CashFlowForm
