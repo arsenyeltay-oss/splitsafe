@@ -126,7 +126,13 @@ function Verdict({ input, report, today, buffer }: { input: PurchaseInput; repor
             {formatMoney(report.firstProblem.gap)} under your {formatMoney(buffer)} buffer.
           </p>
         )}
-        {report.verdict === "SAFE" && <p className="mt-2 text-slate-800">You stay above your {formatMoney(buffer)} buffer the whole way.</p>}
+        {report.verdict === "SAFE" && (
+          <p className="mt-2 text-slate-800">
+            {report.preexistingShortDays > 0
+              ? `It doesn't push any day under your ${formatMoney(buffer)} buffer that wasn't already there.`
+              : `You stay above your ${formatMoney(buffer)} buffer the whole way.`}
+          </p>
+        )}
         {report.preexistingShortDays > 0 && (
           <p className="mt-2 text-sm text-slate-600">
             Heads-up: your calendar already has {report.preexistingShortDays} short day{report.preexistingShortDays === 1 ? "" : "s"} without this purchase. We only judge what this purchase adds.

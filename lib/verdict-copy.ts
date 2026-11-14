@@ -42,10 +42,14 @@ export function verdictCopy(input: PurchaseInput, report: AffordabilityReport, t
       suggestion,
     };
   }
+  const already = report.preexistingShortDays;
   return {
     tone: "safe",
     title: "You can afford this",
-    detail: `${what} keeps every day above your ${formatMoney(buffer)} buffer.`,
+    detail:
+      already > 0
+        ? `${what} doesn't push any day below your ${formatMoney(buffer)} buffer that wasn't already there. Heads-up: your calendar has ${already} short day${already === 1 ? "" : "s"} without it.`
+        : `${what} keeps every day above your ${formatMoney(buffer)} buffer.`,
     suggestion: null,
   };
 }
