@@ -4,7 +4,7 @@
 
 **Live demo: [splitsafe-phi.vercel.app](https://splitsafe-phi.vercel.app)** · no sign-up: click **Try it with sample data**.
 
-![Calendar with headline cards](docs/calendar.png)
+![30-second tour: sample data, danger day, fix options, Can I afford this?, checkout check](docs/demo.gif)
 
 ## The problem
 
@@ -19,13 +19,29 @@ People don't hate BNPL. They hate not seeing what's coming. SplitSafe puts every
 | **Add plans** | Paste one or more confirmation emails. Claude pulls out each plan, then you review and fix it in a table before saving. You can also add, edit and delete plans by hand. |
 | **Cash flow** | Checking balance, take-home pay, pay frequency (weekly / every 2 weeks / twice a month / monthly), next payday, recurring bills, and a safety buffer. |
 | **Cash calendar** | A day-by-day projected balance for the next 90 days. Red days are **short** (below $0) and amber days are **tight** (below the buffer). Three headline cards: *already promised from your next paycheck*, *next danger day* (with the payments behind it), and *debt-free on*. |
+| **Fix my danger day** | Concrete options, each re-checked against the full calendar: *ask Affirm to move $156.63 to payday*, *pause Streaming this month*, or a small mix. Each comes with a ready-to-send request and an "they agreed, update my plan" button, plus the cash needed as a fallback. |
+| **Add to my calendar** | One click exports every BNPL payment and danger-day warning (with reminders) as an `.ics` file for Google, Apple or Outlook Calendar. |
 | **Can I afford this?** | Enter an amount, a provider and a term (Pay in 4, or N months at an APR). You get **SAFE / TIGHT / NO**, the first problem date and amount, the earliest safe purchase date within 60 days, and a safer term if one exists. |
 | **Rescue mode** | "My income dropped": shows which payments fail and when, ranks what to protect first (essentials, then payments that affect your credit, then late-fee payments), and writes a polite hardship request for each provider with a copy button. |
 
-<p>
-<img src="docs/afford.png" width="49%" alt="Can I afford this? verdict" />
-<img src="docs/rescue.png" width="49%" alt="Rescue mode ranking" />
-</p>
+## 60-second tour
+
+| | |
+|---|---|
+| **1. See the danger.** One click loads Sarah's data: 113% of her next paycheck is already promised, and she's short on a day 5 days out. | <img src="docs/calendar.png" alt="Calendar with headline cards" /> |
+| **2. Fix it.** Move one payment to payday, or pause a non-essential bill. Every option is re-simulated; the request message is written for you. | <img src="docs/fix.png" alt="How to fix the danger day" /> |
+| **3. Decide before buying.** A $240 Klarna purchase gets **NO**, with the exact day it bites, a safe date, and a safer term. | <img src="docs/afford.png" alt="Can I afford this? verdict" /> |
+| **4. At checkout.** The same check appears next to "Pay in 4" in the store (demo page and Chrome extension). | <img src="docs/checkout-demo.png" alt="Checkout demo with SplitSafe verdict" /> |
+| **5. When income drops.** Rescue mode ranks what to protect first and drafts hardship requests. | <img src="docs/rescue.png" alt="Rescue mode ranking" /> |
+
+### Demo script for presenting
+
+1. Open the [landing page](https://splitsafe-phi.vercel.app), then click **Try it with sample data**.
+2. **Calendar:** point at the three cards ("113% already promised", "short in 5 days", "debt-free date").
+3. **How to fix:** open *Write the request* for the Affirm option, then click *Affirm agreed*. The danger day disappears.
+4. **Can I afford this?:** it's pre-filled with $240 Klarna, so click **Check it** to get NO, a safe date and a safer term.
+5. **See it at checkout:** switch items and terms in the demo store and watch the verdict change.
+6. Close with: *"BNPL isn't the problem. Flying blind is. We're not a lender, and your data never leaves your browser."*
 
 ### At checkout: demo page + browser extension
 
@@ -38,13 +54,14 @@ BNPL providers don't let third parties add messages inside their own checkout, s
 
 ### Demo story (sample data)
 
-Sarah is 31 and takes home $1,450 every two weeks. Rent is $1,200 on the 1st, and she has $380 in checking. She has three plans: Klarna sneakers ($160, Pay in 4), an Afterpay jacket ($120, Pay in 4), and an Affirm couch ($900 over 6 months at 15% APR). All dates are relative to today, so the demo always shows:
+Sarah is 31 and takes home $1,450 every two weeks. Rent is $1,200 a month, and she has $380 in checking. She has three plans: Klarna sneakers ($160, Pay in 4), an Afterpay jacket ($120, Pay in 4), and an Affirm couch ($900 over 6 months at 15% APR). All dates are relative to today, so the demo always shows:
 
 - a **red danger day about 5 days out**, short by $21.63 because five autopays land before payday;
 - **113% of her next paycheck already promised**;
-- **"Can I afford a $240 Klarna purchase?" → NO**, with a suggested safe date and a safer term.
+- **"Can I afford a $240 Klarna purchase?" → NO**, with a suggested safe date and a safer term;
+- at least one **working fix** for the danger day.
 
-A unit test checks this story against every day of a full year.
+Unit tests check this story against every day of a full year.
 
 ## How it works: engine vs LLM
 
@@ -63,7 +80,7 @@ flowchart LR
   UI -- "user reviews & fills gaps" --> LS
 ```
 
-- **`lib/engine/`** holds pure functions only: payday generation, installment schedules (pay-in-4, amortized monthly, rule expansion), the 90-day daily simulation, insights, affordability with the earliest-safe-date search, and rescue prioritization. Each takes `today` as an argument, so results are reproducible and testable.
+- **`lib/engine/`** holds pure functions only: payday generation, installment schedules (pay-in-4, amortized monthly, rule expansion), the 90-day daily simulation, insights, affordability with the earliest-safe-date search, danger-day fix suggestions, and rescue prioritization. Each takes `today` as an argument, so results are reproducible and testable.
 - **`lib/engine/providers.ts`** is the single config for provider rules: late fee, credit-bureau reporting, hardship options, `sourceUrl`, `lastVerified`, and a `verified` flag. Rules we haven't verified are labeled as unverified in the UI.
 - **`/api/parse`** sends the pasted text to Claude with a zod schema as the structured output format, validates the result with zod, and retries once. Then **code, not the model**, normalizes provider names and expands rules like "4 payments of $25 every 2 weeks starting Nov 20". Missing dates or amounts stay empty and are highlighted for the user to fill in. Nothing is ever invented.
 - **Privacy:** there's no database and no auth. Plans and cash flow live only in your browser's localStorage. The only data that leaves the browser is the pasted email text, sent once for parsing and not stored.
@@ -101,6 +118,7 @@ lib/
   parse/                LLM output schema, normalization, rate limiter
   bnpl-detect.ts        finds "4 payments of $X" offers in page text (extension)
   verdict-copy.ts       verdict wording shared by the checkout demo and the extension
+  ics.ts                .ics calendar export of payments and danger days
   sample-data.ts        date-relative demo persona and emails
   schemas.ts            zod schemas for persisted state
 extension/              Chrome extension (MV3): sync, detect, verdict card

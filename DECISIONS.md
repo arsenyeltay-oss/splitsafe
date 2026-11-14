@@ -45,7 +45,7 @@ Judgment calls made during the build, so reviewers can see what was decided and 
 - **No auth, no database.** Data lives in localStorage, wrapped in try/catch and validated with zod on load. Corrupt data falls back to an empty state instead of crashing.
 - **The waitlist email** is stored only in localStorage, and the modal says so.
 - **Provider rules:** Affirm, Klarna and Afterpay follow the project brief and are marked verified as of 2026-11-14. PayPal Pay in 4, Zip and Sezzle are marked unverified, and the UI says so.
-- **Sample data** is relative to today. Groceries/gas and utilities are included so the projection doesn't drift unrealistically upward. A test checks the story (a short day within 3 weeks, and a NO with a safe date for the $240 Klarna check) on all 366 days of a year.
+- **Sample data** is relative to today, including rent (due the day after a payday this month rather than on a fixed 1st, so the BNPL-driven danger day is the first one on every date of the year). Groceries/gas and utilities are included so the projection doesn't drift unrealistically upward. A test checks the story (a short day within 3 weeks, and a NO with a safe date for the $240 Klarna check) on all 366 days of a year.
 - **Light theme only** for now, to guarantee accessible contrast in the time available.
 
 ## Checkout integration
@@ -55,3 +55,12 @@ Judgment calls made during the build, so reviewers can see what was decided and 
 - **Detection is conservative:** only explicit "N payments of $X" / "N monthly payments of $X" / "$X/mo for N months" text is recognized. A price is never inferred from other numbers on the page. Monthly offers are evaluated at the shown payment (0% APR), because the shown payment already includes any interest.
 - **Distribution:** `npm run build` runs `build:extension` first, so the live site serves a fresh `splitsafe-extension.zip`. Build output is git-ignored.
 - **Verdict wording** lives in `lib/verdict-copy.ts` so the demo page and the extension can't drift apart. When the calendar is already short without the purchase, the copy says so instead of blaming the purchase alone.
+
+## Fix suggestions and calendar export
+
+- **"How to fix" options are checked, not guessed.** Candidates are the BNPL installments and non-essential bills between today and the next payday. Each subset of up to 3 changes is re-simulated. An option is shown only if no day before payday stays under the threshold ($0 for a short day, the buffer for a tight one) **and** no new short day appears later in the 90 days.
+- **Ranking:** fewest changes first, then options that need no one's permission (pausing a bill) before asking a provider, then the smallest amount moved. Options that are just a superset of a listed option are dropped.
+- **Essential bills are never suggested for pausing.** When the shortfall comes from essentials alone, we say so and point to Rescue and the cash-needed fallback.
+- **"Update my plan" changes only the one installment** the user says the provider agreed to move. We never change plans on the user's behalf otherwise.
+- **The .ics export** is pure and tested: all-day events for unpaid installments (1-day reminder), and one warning at the start of each short/tight stretch (2-day reminder). The timestamp is injected; lines are CRLF and folded per RFC 5545.
+- **SAFE copy is honest on already-shaky calendars:** "doesn't push any day below your buffer that wasn't already there" plus a heads-up, instead of claiming every day is fine.
