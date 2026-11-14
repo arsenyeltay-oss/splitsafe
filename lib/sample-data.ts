@@ -2,7 +2,7 @@ import { addDays, addMonths, formatISOForMessage, monthlySchedule, payIn4Schedul
 import type { CashProfile, Installment, ISODate, Plan } from "@/lib/engine";
 
 /**
- * Demo persona: Sarah, 31. Paid $1,450 net every two weeks, rent $1,200 on the 1st, $380 in checking.
+ * Demo persona: Sarah, 31. Paid $1,450 net every two weeks, rent $1,200 (due the day after a payday this month), $380 in checking.
  * Everything is relative to `today` so the demo always shows a short day before her next payday.
  */
 
@@ -18,7 +18,7 @@ export function sampleProfile(today: ISODate): CashProfile {
     nextPayday: addDays(today, 8),
     buffer: 100,
     bills: [
-      { id: "rent", name: "Rent", amount: 1200, dayOfMonth: 1, essential: true },
+      { id: "rent", name: "Rent", amount: 1200, dayOfMonth: dom(9), essential: true },
       { id: "phone", name: "Phone", amount: 65, dayOfMonth: dom(3), essential: true },
       { id: "car", name: "Car insurance", amount: 110, dayOfMonth: dom(5), essential: true },
       { id: "streaming", name: "Streaming", amount: 22, dayOfMonth: dom(6), essential: false },

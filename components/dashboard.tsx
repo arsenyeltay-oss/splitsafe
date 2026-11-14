@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { FixAction } from "@/lib/engine";
 import { samplePlans, sampleProfile } from "@/lib/sample-data";
 import { useAppState } from "@/lib/use-app-state";
 import { localToday } from "@/lib/ui-format";
@@ -34,6 +35,23 @@ export function Dashboard() {
   };
 
   useEffect(() => setToday(localToday()), []);
+
+  /** The provider agreed to a new date: update that one installment. */
+  const movePayment = (a: Extract<FixAction, { kind: "move" }>) => {
+    const plan = state.plans.find((p) => p.id === a.planId);
+    if (!plan) return;
+    let done = false;
+    store.upsertPlan({
+      ...plan,
+      installments: plan.installments
+        .map((i) => {
+          if (done || i.status !== "upcoming" || i.dueDate !== a.from || i.amount !== a.amount) return i;
+          done = true;
+          return { ...i, dueDate: a.to };
+        })
+        .sort((x, y) => x.dueDate.localeCompare(y.dueDate)),
+    });
+  };
 
   // Landing page links here with ?sample=1 (load demo) or ?start=1 (go to plans).
   useEffect(() => {
@@ -86,7 +104,7 @@ export function Dashboard() {
 
       {state.isSample && (
         <div className="rounded-xl bg-teal-50 px-4 py-3 text-sm text-teal-900 ring-1 ring-teal-200">
-          <strong>Sample data:</strong> Sarah, 31 — paid $1,450 every two weeks, rent $1,200 on the 1st, $380 in checking, three BNPL plans. Edit anything, or{" "}
+          <strong>Sample data:</strong> Sarah, 31 — paid $1,450 every two weeks, rent $1,200 a month, $380 in checking, three BNPL plans. Edit anything, or{" "}
           <button type="button" className="font-medium underline underline-offset-2" onClick={() => store.reset()}>
             start fresh with your own
           </button>
@@ -129,7 +147,8 @@ export function Dashboard() {
       </nav>
 
       <main role="tabpanel">
-        {tab === "calendar" && (state.profile ? <CalendarTab profile={state.profile} plans={state.plans} today={today} /> : needsProfile)}
+        {tab === "calendar" &&
+          (state.profile ? <CalendarTab profile={state.profile} plans={state.plans} today={today} onMovePayment={movePayment} /> : needsProfile)}
         {tab === "plans" && (
           <PlansTab plans={state.plans} today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={loadSample} />
         )}

@@ -3,17 +3,30 @@
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { debtSummary, nextDangerDay, nextPaycheckInsight, simulate } from "@/lib/engine";
-import type { CashEvent, CashProfile, DayResult, ISODate, Plan } from "@/lib/engine";
+import type { CashEvent, CashProfile, DayResult, FixAction, ISODate, Plan } from "@/lib/engine";
+import { FixSuggestions } from "./fix-suggestions";
 import { formatDate, formatMoney, formatMoneyShort, weekday } from "@/lib/ui-format";
-import { Badge, Card, cx } from "./ui";
+import { buildIcs } from "@/lib/ics";
+import { Badge, Button, Card, cx } from "./ui";
 
-export function CalendarTab({ profile, plans, today }: { profile: CashProfile; plans: Plan[]; today: ISODate }) {
+export function CalendarTab({
+  profile,
+  plans,
+  today,
+  onMovePayment,
+}: {
+  profile: CashProfile;
+  plans: Plan[];
+  today: ISODate;
+  onMovePayment: (action: Extract<FixAction, { kind: "move" }>) => void;
+}) {
   const days = useMemo(() => simulate(profile, plans, today), [profile, plans, today]);
   return (
     <div className="flex flex-col gap-6">
       <HeadlineCards days={days} profile={profile} plans={plans} today={today} />
+      <FixSuggestions profile={profile} plans={plans} today={today} onMovePayment={onMovePayment} />
       <BalanceChart days={days} buffer={profile.buffer} today={today} />
-      <DayList days={days} today={today} />
+      <DayList days={days} today={today} onExport={() => downloadIcs(plans, days, profile.buffer)} />
     </div>
   );
 }
@@ -170,17 +183,32 @@ function BalanceChart({ days, buffer, today }: { days: DayResult[]; buffer: numb
   );
 }
 
-function DayList({ days, today }: { days: DayResult[]; today: ISODate }) {
+function downloadIcs(plans: Plan[], days: DayResult[], buffer: number) {
+  const blob = new Blob([buildIcs(plans, days, buffer, new Date())], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "splitsafe-payments.ics";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function DayList({ days, today, onExport }: { days: DayResult[]; today: ISODate; onExport: () => void }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? days : days.filter((d) => d.events.length > 0 || d.date === today);
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-5 py-4">
         <h2 className="text-base font-semibold text-slate-900">Day by day</h2>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
-          Show quiet days
-        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+            Show quiet days
+          </label>
+          <Button size="sm" variant="secondary" onClick={onExport} title="Every BNPL payment plus danger-day warnings, for Google, Apple or Outlook Calendar">
+            📅 Add to my calendar (.ics)
+          </Button>
+        </div>
       </div>
       <ul className="divide-y divide-slate-100">
         {visible.map((d) => (
