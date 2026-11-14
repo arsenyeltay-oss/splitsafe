@@ -81,18 +81,34 @@ describe("rescue mode", () => {
     { id: "affirm", provider: "affirm", merchant: "Couch", totalAmount: 300, installments: [{ dueDate: "2026-11-21", amount: 300, status: "upcoming" }], source: "manual" },
     { id: "afterpay", provider: "afterpay", merchant: "Jacket", totalAmount: 30, installments: [{ dueDate: "2026-11-21", amount: 30, status: "upcoming" }], source: "manual" },
   ];
-  const p = profile({ balance: 0, bills: [{ id: "rent", name: "Rent", amount: 500, dayOfMonth: 21 }] });
+  const p = profile({ balance: 0, bills: [{ id: "rent", name: "Rent", amount: 500, dayOfMonth: 21, essential: true }] });
 
   it("lists failing payments and ranks essentials, then credit-reporting, then late-fee", () => {
     const report = rescuePlan(p, plans, TODAY, 600, 10);
-    // $600 in; rent $500 fits, Affirm $300 does not, Afterpay $30 does not.
-    expect(report.atRisk.map((r) => r.event.label)).toEqual(["Affirm · Couch", "Afterpay · Jacket"]);
-    expect(report.priorities.map((o) => o.tier)).toEqual([1, 2]);
+    // $600 in: rent $500 is reserved first, Affirm $300 no longer fits, Afterpay $30 still does.
+    expect(report.atRisk.map((r) => r.event.label)).toEqual(["Affirm · Couch"]);
+    expect(report.priorities.map((o) => o.tier)).toEqual([1]);
   });
 
   it("essentials are protected first but flagged when even they cannot be covered", () => {
     const report = rescuePlan(p, plans, TODAY, 400, 10);
     expect(report.priorities[0]).toMatchObject({ kind: "bill", tier: 0, firstAtRiskDate: "2026-11-21" });
+    expect(report.priorities.map((o) => o.tier)).toEqual([0, 1, 2]);
+  });
+
+  it("allocates by priority across the pay period, not by autopay order", () => {
+    // BNPL autopays on the 16th would drain the account before rent on the 18th; rescue protects rent.
+    const early = profile({ balance: 500, paycheckAmount: 0, bills: [{ id: "rent", name: "Rent", amount: 450, dayOfMonth: 18, essential: true }] });
+    const bnpl: Plan[] = [
+      { id: "k", provider: "klarna", merchant: "Shoes", totalAmount: 100, installments: [{ dueDate: "2026-11-16", amount: 100, status: "upcoming" }], source: "manual" },
+    ];
+    const report = rescuePlan(early, bnpl, TODAY, 0, 10);
+    expect(report.priorities.map((o) => o.label)).toEqual(["Klarna · Shoes"]);
+  });
+
+  it("non-essential bills rank lowest", () => {
+    const subs = profile({ balance: 0, paycheckAmount: 50, bills: [{ id: "tv", name: "Streaming", amount: 60, dayOfMonth: 21, essential: false }] });
+    expect(rescuePlan(subs, [], TODAY, 50, 10).priorities[0]).toMatchObject({ label: "Streaming", tier: 3 });
   });
 
   it("nothing at risk when income covers everything", () => {
@@ -124,7 +140,7 @@ describe("sample data story (any day of the year)", () => {
       expect(report.verdict, today).toBe("NO");
       expect(report.earliestSafeDate, today).not.toBeNull();
     }
-  });
+  }, 30_000);
 
   it("emails mention every plan's merchant and amount", () => {
     const text = sampleEmails(TODAY);

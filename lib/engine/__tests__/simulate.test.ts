@@ -37,7 +37,7 @@ describe("simulate", () => {
 
   it("applies paychecks, bills and installments on the right days", () => {
     const days = simulate(
-      profile({ bills: [{ id: "rent", name: "Rent", amount: 1200, dayOfMonth: 1 }] }),
+      profile({ bills: [{ id: "rent", name: "Rent", amount: 1200, dayOfMonth: 1, essential: true }] }),
       [plan("p", [{ dueDate: "2026-11-16", amount: 50, status: "upcoming" }])],
       TODAY,
     );
@@ -51,7 +51,7 @@ describe("simulate", () => {
 
   it("same-day events: income posts before outflows, all events listed", () => {
     const days = simulate(
-      profile({ balance: 0, bills: [{ id: "b", name: "Gym", amount: 30, dayOfMonth: 20 }] }),
+      profile({ balance: 0, bills: [{ id: "b", name: "Gym", amount: 30, dayOfMonth: 20, essential: true }] }),
       [plan("p", [{ dueDate: "2026-11-20", amount: 40, status: "upcoming" }])],
       TODAY,
     );
@@ -89,7 +89,7 @@ describe("simulate", () => {
 
   it("bills on the 31st land on the last day of shorter months", () => {
     const days = simulate(
-      profile({ paycheckAmount: 0, bills: [{ id: "b", name: "Loan", amount: 10, dayOfMonth: 31 }] }),
+      profile({ paycheckAmount: 0, bills: [{ id: "b", name: "Loan", amount: 10, dayOfMonth: 31, essential: true }] }),
       [],
       TODAY,
     );
@@ -100,7 +100,7 @@ describe("simulate", () => {
 
 describe("insights", () => {
   it("next danger day explains which payments caused it before payday", () => {
-    const p = profile({ balance: 100, bills: [{ id: "phone", name: "Phone", amount: 30, dayOfMonth: 15 }] });
+    const p = profile({ balance: 100, bills: [{ id: "phone", name: "Phone", amount: 30, dayOfMonth: 15, essential: true }] });
     const plans = [
       plan("a", [{ dueDate: "2026-11-16", amount: 40, status: "upcoming" }], { provider: "afterpay" }),
       plan("b", [{ dueDate: "2026-11-18", amount: 73, status: "upcoming" }], { provider: "affirm" }),
@@ -117,7 +117,7 @@ describe("insights", () => {
   });
 
   it("already promised from next paycheck: outflows from payday until the following one", () => {
-    const p = profile({ bills: [{ id: "rent", name: "Rent", amount: 1200, dayOfMonth: 1 }] });
+    const p = profile({ bills: [{ id: "rent", name: "Rent", amount: 1200, dayOfMonth: 1, essential: true }] });
     const plans = [
       plan("p", [
         { dueDate: "2026-11-18", amount: 40, status: "upcoming" },

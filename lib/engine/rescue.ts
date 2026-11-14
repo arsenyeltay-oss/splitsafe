@@ -7,15 +7,16 @@ import type { CashEvent, CashProfile, ISODate, Plan, ProviderId } from "./types"
 
 /**
  * Priority tiers, lowest number = pay first.
- * 0 essentials (rent, utilities) · 1 reported to credit bureaus · 2 late fee (or unknown rules) · 3 no known penalty
+ * 0 essential bills (rent, utilities, insurance) · 1 BNPL reported to credit bureaus ·
+ * 2 late fee (or unknown rules) · 3 no known penalty, and non-essential bills (subscriptions)
  */
 export type PriorityTier = 0 | 1 | 2 | 3;
 
 export const TIER_LABEL: Record<PriorityTier, string> = {
-  0: "Essentials — pay first",
+  0: "Essential — pay first",
   1: "Can affect your credit",
   2: "Late fee",
-  3: "No known penalty",
+  3: "Lowest priority",
 };
 
 export function providerTier(provider: ProviderId): { tier: PriorityTier; reason: string } {
@@ -29,8 +30,11 @@ export function providerTier(provider: ProviderId): { tier: PriorityTier; reason
 
 type Outflow = Exclude<CashEvent, { kind: "income" }>;
 
-function tierOf(e: Outflow): PriorityTier {
-  return e.kind === "bill" ? 0 : providerTier(e.provider).tier;
+function priorityOf(e: Outflow): { tier: PriorityTier; reason: string } {
+  if (e.kind === "installment") return providerTier(e.provider);
+  return e.essential
+    ? { tier: 0, reason: "Essentials like housing, utilities and insurance come first." }
+    : { tier: 3, reason: "Not essential — consider pausing it this month." };
 }
 
 export interface AtRiskPayment {
@@ -61,9 +65,11 @@ export interface RescueReport {
 }
 
 /**
- * Replays the next `horizonDays` with a new paycheck amount. Within each day, money in posts
- * first, then outflows in priority order (essentials, then credit-reporting BNPL, then the rest).
- * Any payment that leaves the balance below $0 is "at risk" of bouncing or overdrafting.
+ * Replays the next `horizonDays` with a new paycheck amount, one pay period at a time (a period
+ * starts at each paycheck). Within a period the money is allocated by priority rather than by
+ * autopay order: essentials are always reserved (even if that overdraws), then each other payment
+ * is covered only if it still fits. Payments that don't fit are "at risk" — the ones to ask the
+ * provider to move — and are not deducted, since the goal is to reschedule them.
  */
 export function rescuePlan(
   profile: CashProfile,
@@ -75,22 +81,31 @@ export function rescuePlan(
   const events = collectEvents(profile, plans, today, addDays(today, horizonDays - 1), {
     paycheckAmount: newPaycheckAmount,
   });
-  const ordered = [...events].sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-    if (a.kind === "income" || b.kind === "income") return a.kind === "income" ? -1 : b.kind === "income" ? 1 : 0;
-    return tierOf(a) - tierOf(b);
-  });
+
+  const periods: Outflow[][] = [[]];
+  const incomes: number[] = [0];
+  for (const e of events) {
+    if (e.kind === "income") {
+      periods.push([]);
+      incomes.push(toCents(e.amount));
+    } else periods[periods.length - 1].push(e);
+  }
 
   let balance = toCents(profile.balance);
   const atRisk: AtRiskPayment[] = [];
-  for (const e of ordered) {
-    if (e.kind === "income") {
-      balance += toCents(e.amount);
-      continue;
+  periods.forEach((outflows, i) => {
+    balance += incomes[i];
+    const ordered = [...outflows].sort(
+      (a, b) => priorityOf(a).tier - priorityOf(b).tier || a.date.localeCompare(b.date),
+    );
+    for (const e of ordered) {
+      const { tier } = priorityOf(e);
+      const after = balance - toCents(e.amount);
+      if (after >= 0 || tier === 0) balance = after;
+      if (after < 0) atRisk.push({ event: e, tier, balanceAfter: toDollars(after) });
     }
-    balance -= toCents(e.amount);
-    if (balance < 0) atRisk.push({ event: e, tier: tierOf(e), balanceAfter: toDollars(balance) });
-  }
+  });
+  atRisk.sort((a, b) => a.event.date.localeCompare(b.event.date));
 
   const byKey = new Map<string, RescueObligation>();
   for (const { event: e, tier } of atRisk) {
@@ -108,10 +123,7 @@ export function rescuePlan(
       provider: e.kind === "installment" ? e.provider : undefined,
       planId: e.kind === "installment" ? e.planId : undefined,
       tier,
-      reason:
-        e.kind === "bill"
-          ? "Housing and essentials keep a roof over your head — protect these first."
-          : providerTier(e.provider).reason,
+      reason: priorityOf(e).reason,
       firstAtRiskDate: e.date,
       amountAtRisk: e.amount,
       paymentsAtRisk: 1,
@@ -140,7 +152,7 @@ export function hardshipMessage(
   return [
     `Hi ${name} team,`,
     "",
-    `I have a ${name} plan for my purchase from ${plan.merchant || "a merchant"}. My income has recently dropped, and I don't expect to have enough in my account for the payment due ${formatISOForMessage(obligation.firstAtRiskDate)} (about $${obligation.amountAtRisk.toFixed(2)} due over the coming weeks).`,
+    `I have a payment plan with ${name} for my purchase from ${plan.merchant || "a merchant"}. My income has recently dropped, and I don't expect to have enough in my account for the payment due ${formatISOForMessage(obligation.firstAtRiskDate)} (about $${obligation.amountAtRisk.toFixed(2)} due over the coming weeks).`,
     "",
     `I want to pay this in full. Could you help me with ${ask}? I'd also like to understand how to avoid late fees${reporting} while we sort this out.`,
     "",

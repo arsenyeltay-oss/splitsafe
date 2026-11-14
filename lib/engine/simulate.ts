@@ -42,7 +42,7 @@ export function collectEvents(profile: CashProfile, plans: Plan[], today: ISODat
   for (const bill of profile.bills) {
     if (bill.amount <= 0) continue;
     for (const date of billDates(bill, today, end)) {
-      events.push({ kind: "bill", date, amount: bill.amount, label: bill.name, billId: bill.id });
+      events.push({ kind: "bill", date, amount: bill.amount, label: bill.name, billId: bill.id, essential: bill.essential });
     }
   }
   for (const plan of plans) {

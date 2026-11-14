@@ -29,6 +29,8 @@ export interface Bill {
   amount: number;
   /** 1–31. Clamped to the last day of shorter months. */
   dayOfMonth: number;
+  /** Rent, utilities, insurance… — protected first in rescue mode. Subscriptions are not. */
+  essential: boolean;
 }
 
 export interface CashProfile {
@@ -44,7 +46,7 @@ export interface CashProfile {
 
 export type CashEvent =
   | { kind: "income"; date: ISODate; amount: number; label: string }
-  | { kind: "bill"; date: ISODate; amount: number; label: string; billId: string }
+  | { kind: "bill"; date: ISODate; amount: number; label: string; billId: string; essential: boolean }
   | {
       kind: "installment";
       date: ISODate;
