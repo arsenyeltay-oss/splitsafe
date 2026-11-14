@@ -32,7 +32,7 @@ export const PROVIDERS: Record<ProviderId, ProviderRule> = {
     lateFee: { charges: false, description: "No late fees." },
     reportsToCreditBureaus: {
       value: true,
-      description: "Reports to Experian and TransUnion, so missed payments can affect your credit.",
+      description: "Reports every loan, including Pay in 4, to Experian and TransUnion (since 2025), so missed payments can affect your credit.",
     },
     hardshipOptions: ["Contact support to discuss a payment arrangement", "Change your payment date in the app (where offered)"],
     sourceUrl: "https://www.affirm.com/how-it-works",
@@ -43,7 +43,10 @@ export const PROVIDERS: Record<ProviderId, ProviderRule> = {
     id: "klarna",
     name: "Klarna",
     lateFee: { charges: true, description: "Late fee of up to ~$7 on Pay in 4." },
-    reportsToCreditBureaus: { value: true, description: "Reports to TransUnion." },
+    reportsToCreditBureaus: {
+      value: false,
+      description: "Pay in 4 isn't reported to credit bureaus; monthly financing is reported to TransUnion. Unpaid balances can go to collections.",
+    },
     hardshipOptions: ["Payment extension on request (in the app)", "Contact customer service about hardship"],
     sourceUrl: "https://www.klarna.com/us/customer-service/",
     lastVerified: "2026-11-14",

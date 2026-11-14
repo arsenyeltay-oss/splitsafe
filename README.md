@@ -8,7 +8,7 @@
 
 ## The problem
 
-US adults aged 25–45 stack Buy Now, Pay Later plans across Klarna, Affirm, Afterpay, PayPal Pay in 4, Zip and Sezzle. Each app shows only its own plans, so nobody sees the combined picture against the paycheck. Autopays overdraw the account, late fees pile up, and since 2025 Affirm and Klarna report to credit bureaus.
+US adults aged 25–45 stack Buy Now, Pay Later plans across Klarna, Affirm, Afterpay, PayPal Pay in 4, Zip and Sezzle. Each app shows only its own plans, so nobody sees the combined picture against the paycheck. Autopays overdraw the account, late fees pile up, and since 2025 Affirm reports every loan, Pay in 4 included, to Experian and TransUnion.
 
 People don't hate BNPL. They hate not seeing what's coming. SplitSafe puts every plan, bill and paycheck on one calendar and shows the day you'd run short, before it happens. **We are not a lender and never sell credit.**
 
