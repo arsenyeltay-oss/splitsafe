@@ -79,6 +79,35 @@ export default function Landing() {
           </div>
         </section>
 
+        <section aria-labelledby="checkout" className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+          <div className="grid items-center gap-8 rounded-3xl bg-slate-900 p-8 text-white md:grid-cols-2 sm:p-10">
+            <div>
+              <h2 id="checkout" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                The check shows up right at checkout.
+              </h2>
+              <p className="mt-3 text-slate-300">
+                The SplitSafe browser extension spots “4 payments of $60” on a store&apos;s checkout page and tells you SAFE, TIGHT or NO before you
+                click — computed on your device, nothing sent anywhere.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/demo/checkout" className="rounded-xl bg-white px-5 py-3 font-semibold text-slate-900 hover:bg-slate-100">
+                  Try the checkout demo
+                </Link>
+                <a href="/splitsafe-extension.zip" className="rounded-xl px-5 py-3 font-semibold text-white ring-1 ring-white/40 hover:bg-white/10">
+                  Download Chrome extension
+                </a>
+              </div>
+              <p className="mt-3 text-xs text-slate-400">Unzip, open chrome://extensions, turn on Developer mode, “Load unpacked”.</p>
+            </div>
+            <div className="rounded-2xl bg-red-50 p-5 text-slate-900 ring-2 ring-red-300">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">SplitSafe check</p>
+              <p className="mt-1 text-lg font-semibold text-red-800">✕ Not right now</p>
+              <p className="mt-1 text-sm">$240.00 with Klarna would leave you $81.63 short in 5 days.</p>
+              <p className="mt-1 text-sm text-slate-700">💡 Safe to buy after your next two paychecks.</p>
+            </div>
+          </div>
+        </section>
+
         <section aria-labelledby="pricing" className="bg-white py-20">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <h2 id="pricing" className="text-center text-3xl font-semibold tracking-tight text-slate-900">

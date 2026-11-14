@@ -69,7 +69,10 @@ export function Dashboard() {
         <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
           Split<span className="text-teal-700">Safe</span>
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/demo/checkout" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50">
+            See it at checkout →
+          </Link>
           <Button variant="secondary" size="sm" onClick={loadSample}>
             {state.isSample ? "Reload sample" : "Try with sample data"}
           </Button>

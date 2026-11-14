@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CashProfile, Plan } from "@/lib/engine";
 import { appStateSchema, type AppState } from "@/lib/schemas";
+import { STORAGE_KEY } from "@/lib/storage-key";
 
-const STORAGE_KEY = "splitsafe:v1";
 export const EMPTY_STATE: AppState = { version: 1, plans: [], profile: null, isSample: false };
 
 function load(): AppState {
