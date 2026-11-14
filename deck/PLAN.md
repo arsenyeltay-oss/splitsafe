@@ -3,8 +3,7 @@
 Rules from the case FAQ: **max 10 slides including the title**, **English**, **PDF**, no video (screenshots instead).
 Scoring: Product & engineering 40% · Value & retention 20% · Problem & user 15% · Business potential 15% · Originality 10%.
 
-The previous HTML version of the deck (`deck/index.html`, `deck/SplitSafe-pitch-deck.pdf`) uses the old slide order.
-It's a source of copy, numbers and screenshots. **The Canva deck follows the order below.** Final export: `deck/SplitSafe-pitch-deck.pdf`.
+The deck was built in Canva from this plan and exported to `deck/SplitSafe-pitch-deck.pdf` (the earlier HTML draft was removed). Slides in order:
 
 ## Slides
 
