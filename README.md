@@ -20,7 +20,9 @@ People don't hate BNPL. They hate not seeing what's coming. SplitSafe puts every
 | **Cash flow** | Checking balance, take-home pay, pay frequency (weekly / every 2 weeks / twice a month / monthly), next payday, recurring bills, and a safety buffer. |
 | **Cash calendar** | A day-by-day projected balance for the next 90 days. Red days are **short** (below $0) and amber days are **tight** (below the buffer). Three headline cards: *already promised from your next paycheck*, *next danger day* (with the payments behind it), and *debt-free on*. |
 | **Fix my danger day** | Concrete options, each re-checked against the full calendar: *ask Affirm to move $156.63 to payday*, *pause Streaming this month*, or a small mix. Each comes with a ready-to-send request and an "they agreed, update my plan" button, plus the cash needed as a fallback. |
-| **Add to my calendar** | One click exports every BNPL payment and danger-day warning (with reminders) as an `.ics` file for Google, Apple or Outlook Calendar. |
+| **Add to my calendar** *(Plus)* | One click exports every BNPL payment and danger-day warning (with reminders) as an `.ics` file for Google, Apple or Outlook Calendar. |
+| **Weekly check-in** | When you come back, SplitSafe replays what was scheduled since your last visit (paychecks, bills, BNPL autopays). You confirm which payments went through and correct the balance, and the calendar continues from real numbers. Payoff progress and check-ins build up over time. For judges: *Simulate coming back a week later* in the sample banner. |
+| **Plus paywall** | Free: calendar, fixes, paste parsing, rescue, and 3 affordability checks a month. **Plus $4.99/mo or $39.99/yr**: unlimited checks and calendar alerts. Test-mode checkout (card `4242 4242 4242 4242`); `4000 0000 0000 0002` shows a decline. |
 | **Can I afford this?** | Enter an amount, a provider and a term (Pay in 4, or N months at an APR). You get **SAFE / TIGHT / NO**, the first problem date and amount, the earliest safe purchase date within 60 days, and a safer term if one exists. |
 | **Rescue mode** | "My income dropped": shows which payments fail and when, ranks what to protect first (essentials, then payments that affect your credit, then late-fee payments), and writes a polite hardship request for each provider with a copy button. |
 
@@ -33,6 +35,13 @@ People don't hate BNPL. They hate not seeing what's coming. SplitSafe puts every
 | **3. Decide before buying.** A $240 Klarna purchase gets **NO**, with the exact day it bites, a safe date, and a safer term. | <img src="docs/afford.png" alt="Can I afford this? verdict" /> |
 | **4. At checkout.** The same check appears next to "Pay in 4" in the store (demo page and Chrome extension). | <img src="docs/checkout-demo.png" alt="Checkout demo with SplitSafe verdict" /> |
 | **5. When income drops.** Rescue mode ranks what to protect first and drafts hardship requests. | <img src="docs/rescue.png" alt="Rescue mode ranking" /> |
+
+### Business model and retention
+
+- **Who pays:** the user, B2C only. We take no lender commissions and never sell data, so incentives stay on the user's side.
+- **Why Plus:** the moment of value is *before a purchase* ("Can I afford this?") and *before a payment* (calendar alerts). People who stack 3+ BNPL plans buy with BNPL repeatedly, so the free limit of 3 checks a month is hit by exactly the users who get the most value.
+- **Why they come back:** BNPL schedules run every 2 weeks, so there's always a next payment. The weekly check-in keeps the calendar accurate (data that compounds), shows payoff progress, and surfaces the next danger day. Retention is tied to an ongoing obligation rather than to novelty.
+- **Rescue mode stays free:** charging people in a hardship month is the wrong incentive, and it builds the trust that converts later.
 
 ### Demo script for presenting
 
@@ -84,6 +93,13 @@ flowchart LR
 - **`lib/engine/providers.ts`** is the single config for provider rules: late fee, credit-bureau reporting, hardship options, `sourceUrl`, `lastVerified`, and a `verified` flag. Rules we haven't verified are labeled as unverified in the UI.
 - **`/api/parse`** sends the pasted text to Claude with a zod schema as the structured output format, validates the result with zod, and retries once. Then **code, not the model**, normalizes provider names and expands rules like "4 payments of $25 every 2 weeks starting Nov 20". Missing dates or amounts stay empty and are highlighted for the user to fill in. Nothing is ever invented.
 - **Privacy:** there's no database and no auth. Plans and cash flow live only in your browser's localStorage. The only data that leaves the browser is the pasted email text, sent once for parsing and not stored.
+
+## Dependencies
+
+- **Next.js 15 + React 19 + TypeScript + Tailwind**, deployed on **Vercel**.
+- **Anthropic Claude API** (`@anthropic-ai/sdk`, model from `ANTHROPIC_MODEL`), used only in `/api/parse` to turn pasted email text into JSON. The key stays on the server.
+- **zod** (validation), **Recharts** (balance chart), **vitest** (tests), **esbuild** + **adm-zip** (extension bundle).
+- No database, no auth, and no payment processor. Checkout is a clearly labeled test mode, and card data never leaves the browser.
 
 ## Run locally
 

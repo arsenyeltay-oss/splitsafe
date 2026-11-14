@@ -14,7 +14,21 @@ const VERDICT_STYLE = {
   NO: { box: "bg-red-50 ring-red-200", title: "text-red-800", label: "Not right now", icon: "✕" },
 } as const;
 
-export function AffordTab({ profile, plans, today }: { profile: CashProfile; plans: Plan[]; today: ISODate }) {
+export function AffordTab({
+  profile,
+  plans,
+  today,
+  checksLeft,
+  onCheck,
+  onNeedPlus,
+}: {
+  profile: CashProfile;
+  plans: Plan[];
+  today: ISODate;
+  checksLeft: number;
+  onCheck: () => void;
+  onNeedPlus: () => void;
+}) {
   const [amount, setAmount] = useState("240");
   const [provider, setProvider] = useState<ProviderId>("klarna");
   const [kind, setKind] = useState<"payin4" | "monthly">("payin4");
@@ -31,6 +45,8 @@ export function AffordTab({ profile, plans, today }: { profile: CashProfile; pla
     if (kind === "monthly" && (!Number.isInteger(m) || m < 1 || m > 60)) return setError("Months must be between 1 and 60.");
     if (kind === "monthly" && (Number.isNaN(a) || a < 0 || a > 100)) return setError("APR must be between 0 and 100.");
     setError(null);
+    if (checksLeft <= 0) return onNeedPlus();
+    onCheck();
     const input: PurchaseInput = { amount: amt, provider, term: kind === "payin4" ? { kind: "payin4" } : { kind: "monthly", months: m, apr: a } };
     setResult({ input, report: checkAffordability(profile, plans, input, today) });
   };
@@ -83,6 +99,11 @@ export function AffordTab({ profile, plans, today }: { profile: CashProfile; pla
           <Button type="submit" size="lg">
             Check it
           </Button>
+          <p className="text-center text-xs text-slate-500">
+            {Number.isFinite(checksLeft)
+              ? `${checksLeft} of 3 free checks left this month`
+              : "Plus: unlimited checks"}
+          </p>
         </form>
       </Card>
 

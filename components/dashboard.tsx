@@ -2,16 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { addDays } from "@/lib/engine";
 import type { FixAction } from "@/lib/engine";
+import { PRICES } from "@/lib/pricing";
 import { samplePlans, sampleProfile } from "@/lib/sample-data";
-import { useAppState } from "@/lib/use-app-state";
+import { affordChecksLeft, isPlus, useAppState } from "@/lib/use-app-state";
 import { localToday } from "@/lib/ui-format";
 import { AffordTab } from "./afford-tab";
 import { CalendarTab } from "./calendar-tab";
 import { CashFlowForm } from "./cash-flow-form";
+import { CheckInCard } from "./check-in-card";
+import { Paywall } from "./paywall";
 import { PlansTab } from "./plans-tab";
 import { RescueTab } from "./rescue-tab";
-import { Button, cx, Disclaimer, EmptyState } from "./ui";
+import { Badge, Button, cx, Disclaimer, EmptyState } from "./ui";
 
 const TABS = [
   { id: "calendar", label: "Calendar" },
@@ -27,10 +31,23 @@ export function Dashboard() {
   const { state, ready } = store;
   const [today, setToday] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("calendar");
+  const [paywall, setPaywall] = useState<string | null>(null);
 
-  const loadSample = () => {
-    const t = localToday();
-    store.replaceAll({ version: 1, plans: samplePlans(t), profile: sampleProfile(t), isSample: true });
+  /**
+   * Loads Sarah's sample data. With `daysAgo`, it is created as if she set it up that many days ago,
+   * so the weekly check-in runs on real logic: the demo's "time acceleration".
+   */
+  const loadSample = (daysAgo = 0) => {
+    const t = addDays(localToday(), -daysAgo);
+    store.replaceAll({
+      ...state,
+      version: 1,
+      plans: samplePlans(t),
+      profile: sampleProfile(t),
+      isSample: true,
+      asOf: t,
+      checkIns: [],
+    });
     setTab("calendar");
   };
 
@@ -75,7 +92,7 @@ export function Dashboard() {
   const needsProfile = (
     <EmptyState title="Add your cash flow first" body="We need your balance, paycheck and payday to project your days. It takes about a minute.">
       <Button onClick={() => setTab("cash")}>Set up cash flow</Button>
-      <Button variant="secondary" onClick={loadSample}>
+      <Button variant="secondary" onClick={() => loadSample()}>
         Try with sample data
       </Button>
     </EmptyState>
@@ -91,7 +108,19 @@ export function Dashboard() {
           <Link href="/demo/checkout" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50">
             See it at checkout →
           </Link>
-          <Button variant="secondary" size="sm" onClick={loadSample}>
+          {isPlus(state) ? (
+            <span className="flex items-center gap-1">
+              <Badge tone="teal">Plus ✓ (test)</Badge>
+              <Button variant="ghost" size="sm" onClick={() => confirm("Cancel Plus? (test mode — nothing was charged)") && store.cancelPlus()}>
+                Cancel
+              </Button>
+            </span>
+          ) : (
+            <Button size="sm" onClick={() => setPaywall("Plus unlocks unlimited affordability checks and calendar alerts.")}>
+              Upgrade · {PRICES.monthly.label}
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => loadSample()}>
             {state.isSample ? "Reload sample" : "Try with sample data"}
           </Button>
           {!isEmpty && (
@@ -108,8 +137,23 @@ export function Dashboard() {
           <button type="button" className="font-medium underline underline-offset-2" onClick={() => store.reset()}>
             start fresh with your own
           </button>
-          .
+          .{" "}
+          <button type="button" className="font-medium underline underline-offset-2" onClick={() => loadSample(7)}>
+            ⏩ Simulate coming back a week later
+          </button>{" "}
+          to see the weekly check-in.
         </div>
+      )}
+
+      {state.profile && state.asOf && state.asOf < today && (
+        <CheckInCard
+          key={state.asOf}
+          profile={state.profile}
+          plans={state.plans}
+          since={state.asOf}
+          today={today}
+          onConfirm={(profile, plans, paid, missed) => store.checkIn(profile, plans, paid, missed)}
+        />
       )}
 
       {isEmpty ? (
@@ -117,7 +161,7 @@ export function Dashboard() {
           title="See every BNPL plan against your paycheck"
           body="Add your plans and your pay schedule, and we'll show the days your balance dips — before autopay finds them. Nothing is stored on a server."
         >
-          <Button size="lg" onClick={loadSample}>
+          <Button size="lg" onClick={() => loadSample()}>
             Try it with sample data
           </Button>
           <Button size="lg" variant="secondary" onClick={() => setTab("plans")}>
@@ -148,9 +192,21 @@ export function Dashboard() {
 
       <main role="tabpanel">
         {tab === "calendar" &&
-          (state.profile ? <CalendarTab profile={state.profile} plans={state.plans} today={today} onMovePayment={movePayment} /> : needsProfile)}
+          (state.profile ? (
+            <CalendarTab
+              profile={state.profile}
+              plans={state.plans}
+              today={today}
+              checkIns={state.checkIns.length}
+              onMovePayment={movePayment}
+              canExport={isPlus(state)}
+              onNeedPlus={() => setPaywall("Calendar alerts are part of Plus: every BNPL payment and danger day in your calendar, with reminders.")}
+            />
+          ) : (
+            needsProfile
+          ))}
         {tab === "plans" && (
-          <PlansTab plans={state.plans} today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={loadSample} />
+          <PlansTab plans={state.plans} today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()} />
         )}
         {tab === "cash" && (
           <CashFlowForm
@@ -162,7 +218,19 @@ export function Dashboard() {
             }}
           />
         )}
-        {tab === "afford" && (state.profile ? <AffordTab profile={state.profile} plans={state.plans} today={today} /> : needsProfile)}
+        {tab === "afford" &&
+          (state.profile ? (
+            <AffordTab
+              profile={state.profile}
+              plans={state.plans}
+              today={today}
+              checksLeft={affordChecksLeft(state)}
+              onCheck={store.recordAffordCheck}
+              onNeedPlus={() => setPaywall("You've used your 3 free checks this month. Plus gives you unlimited checks before every purchase.")}
+            />
+          ) : (
+            needsProfile
+          ))}
         {tab === "rescue" &&
           (state.profile ? (
             state.plans.length > 0 ? (
@@ -174,6 +242,8 @@ export function Dashboard() {
             needsProfile
           ))}
       </main>
+
+      <Paywall open={paywall !== null} onClose={() => setPaywall(null)} reason={paywall ?? ""} />
 
       <footer className="border-t border-slate-200 pt-4">
         <Disclaimer />

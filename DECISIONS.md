@@ -64,3 +64,12 @@ Judgment calls made during the build, so reviewers can see what was decided and 
 - **"Update my plan" changes only the one installment** the user says the provider agreed to move. We never change plans on the user's behalf otherwise.
 - **The .ics export** is pure and tested: all-day events for unpaid installments (1-day reminder), and one warning at the start of each short/tight stretch (2-day reminder). The timestamp is injected; lines are CRLF and folded per RFC 5545.
 - **SAFE copy is honest on already-shaky calendars:** "doesn't push any day below your buffer that wasn't already there" plus a heads-up, instead of claiming every day is fine.
+
+## Monetization and retention (after the case FAQ)
+
+- **A working paywall, not just a pricing page.** Free gets 3 "Can I afford this?" checks a month. Plus ($4.99/mo or $39.99/yr) unlocks unlimited checks and calendar alerts (.ics). Hitting a limit opens a paywall that leads to `/checkout`.
+- **Test-mode checkout, built in.** It validates like a real form (Luhn, expiry, CVC, ZIP, and a decline card modelled on Stripe's `4000…0002`), but nothing is charged and no card data leaves the browser. The test card is shown on screen so the jury can complete it. Stripe Checkout in test mode is a drop-in upgrade if a Stripe test key is added.
+- **What stays free and why:** the calendar, danger-day fixes, email parsing and rescue mode. The core "don't fly blind" value and hardship help shouldn't be paywalled. Plus charges for convenience at the moment of purchase and payment.
+- **Return mechanic: the weekly check-in.** The app stores the date the balance refers to (`asOf`). On a later visit it replays the period with the same simulation, asks which BNPL autopays went through (a missed one is added back to the balance estimate and stays due), lets the user correct the balance, rolls the payday forward, and records the check-in. Payoff progress shows on the debt-free card.
+- **Demo time acceleration:** "Simulate coming back a week later" recreates the sample as if it had been set up 7 days ago. The check-in then runs on real logic, not a canned screen.
+- **Removed:** the Plus waitlist modal, which became a dead end once the real checkout existed.

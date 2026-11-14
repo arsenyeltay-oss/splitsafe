@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { debtSummary, nextDangerDay, nextPaycheckInsight, simulate } from "@/lib/engine";
+import { debtSummary, nextDangerDay, nextPaycheckInsight, payoffProgress, simulate } from "@/lib/engine";
 import type { CashEvent, CashProfile, DayResult, FixAction, ISODate, Plan } from "@/lib/engine";
 import { FixSuggestions } from "./fix-suggestions";
 import { formatDate, formatMoney, formatMoneyShort, weekday } from "@/lib/ui-format";
@@ -13,20 +13,31 @@ export function CalendarTab({
   profile,
   plans,
   today,
+  checkIns,
   onMovePayment,
+  canExport,
+  onNeedPlus,
 }: {
   profile: CashProfile;
   plans: Plan[];
   today: ISODate;
+  checkIns: number;
   onMovePayment: (action: Extract<FixAction, { kind: "move" }>) => void;
+  canExport: boolean;
+  onNeedPlus: () => void;
 }) {
   const days = useMemo(() => simulate(profile, plans, today), [profile, plans, today]);
   return (
     <div className="flex flex-col gap-6">
-      <HeadlineCards days={days} profile={profile} plans={plans} today={today} />
+      <HeadlineCards days={days} profile={profile} plans={plans} today={today} checkIns={checkIns} />
       <FixSuggestions profile={profile} plans={plans} today={today} onMovePayment={onMovePayment} />
       <BalanceChart days={days} buffer={profile.buffer} today={today} />
-      <DayList days={days} today={today} onExport={() => downloadIcs(plans, days, profile.buffer)} />
+      <DayList
+        days={days}
+        today={today}
+        canExport={canExport}
+        onExport={() => (canExport ? downloadIcs(plans, days, profile.buffer) : onNeedPlus())}
+      />
     </div>
   );
 }
@@ -35,7 +46,20 @@ function eventSummary(events: CashEvent[]): string {
   return events.map((e) => `${e.kind === "installment" ? e.label.split(" · ")[0] : e.label} ${formatMoneyShort(e.amount)}`).join(" + ");
 }
 
-export function HeadlineCards({ days, profile, plans, today }: { days: DayResult[]; profile: CashProfile; plans: Plan[]; today: ISODate }) {
+export function HeadlineCards({
+  days,
+  profile,
+  plans,
+  today,
+  checkIns,
+}: {
+  days: DayResult[];
+  profile: CashProfile;
+  plans: Plan[];
+  today: ISODate;
+  checkIns: number;
+}) {
+  const progress = payoffProgress(plans);
   const paycheck = nextPaycheckInsight(days, profile);
   const danger = nextDangerDay(days, profile.buffer);
   const debt = debtSummary(plans);
@@ -92,6 +116,13 @@ export function HeadlineCards({ days, profile, plans, today }: { days: DayResult
             <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{formatDate(debt.debtFreeDate, today)}</p>
             <p className="mt-1 text-sm text-slate-600">
               {formatMoney(debt.totalOutstanding)} left across {debt.activePlans} plan{debt.activePlans === 1 ? "" : "s"}
+            </p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={Math.round(progress.ratio * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="BNPL paid off">
+              <div className="h-full rounded-full bg-teal-600" style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              {Math.round(progress.ratio * 100)}% paid off ({formatMoney(progress.paid)} of {formatMoney(progress.total)})
+              {checkIns > 0 && ` · ${checkIns} check-in${checkIns === 1 ? "" : "s"}`}
             </p>
           </>
         ) : (
@@ -193,7 +224,7 @@ function downloadIcs(plans: Plan[], days: DayResult[], buffer: number) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function DayList({ days, today, onExport }: { days: DayResult[]; today: ISODate; onExport: () => void }) {
+function DayList({ days, today, canExport, onExport }: { days: DayResult[]; today: ISODate; canExport: boolean; onExport: () => void }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? days : days.filter((d) => d.events.length > 0 || d.date === today);
   return (
@@ -206,7 +237,7 @@ function DayList({ days, today, onExport }: { days: DayResult[]; today: ISODate;
             Show quiet days
           </label>
           <Button size="sm" variant="secondary" onClick={onExport} title="Every BNPL payment plus danger-day warnings, for Google, Apple or Outlook Calendar">
-            📅 Add to my calendar (.ics)
+            📅 Add to my calendar (.ics){canExport ? "" : " · Plus"}
           </Button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WaitlistButton } from "@/components/waitlist-button";
+import { FREE_FEATURES, PLUS_FEATURES, PRICES } from "@/lib/pricing";
 
 const STEPS = [
   {
@@ -19,8 +19,6 @@ const STEPS = [
   },
 ];
 
-const FREE = ["90-day cash calendar", "Danger-day & debt-free date", "Paste emails or add plans by hand", "Rescue mode with hardship messages"];
-const PLUS = ["Unlimited “Can I afford this?” checks", "Alerts before a danger day", "Weekly forecast email", "Everything in Free"];
 
 export default function Landing() {
   return (
@@ -53,6 +51,21 @@ export default function Landing() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-slate-500">No sign-up. Your data stays in your browser. We&apos;re not a lender.</p>
+          <details className="mx-auto mt-8 max-w-xl rounded-xl bg-white p-4 text-left text-sm text-slate-700 ring-1 ring-slate-200">
+            <summary className="cursor-pointer font-semibold text-slate-900">Judging? The 3-minute path</summary>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5">
+              <li>
+                <Link href="/app?sample=1" className="font-medium text-teal-800 underline">Try it with sample data</Link> — Calendar: danger day, its cause, and &ldquo;How to fix&rdquo;.
+              </li>
+              <li>Plans → Paste confirmation emails → Paste 3 sample emails → Extract plans (live Claude parsing).</li>
+              <li>Can I afford this? → Check it (3 free checks a month, then the Plus paywall).</li>
+              <li>Upgrade → test checkout with card 4242 4242 4242 4242, any future date, any CVC.</li>
+              <li>Sample banner → &ldquo;Simulate coming back a week later&rdquo; → the weekly check-in.</li>
+              <li>
+                <Link href="/demo/checkout" className="font-medium text-teal-800 underline">Checkout demo</Link> — the same check next to Pay in 4 in a store.
+              </li>
+            </ol>
+          </details>
         </section>
 
         <section aria-labelledby="how" className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
@@ -119,7 +132,7 @@ export default function Landing() {
                 <h3 className="text-lg font-semibold text-slate-900">Free</h3>
                 <p className="mt-1 text-3xl font-semibold text-slate-900">$0</p>
                 <ul className="mt-5 flex flex-1 flex-col gap-2 text-sm text-slate-700">
-                  {FREE.map((f) => (
+                  {FREE_FEATURES.map((f) => (
                     <li key={f}>✓ {f}</li>
                   ))}
                 </ul>
@@ -130,19 +143,22 @@ export default function Landing() {
               <div className="flex flex-col rounded-2xl p-6 ring-2 ring-teal-700">
                 <h3 className="text-lg font-semibold text-slate-900">Plus</h3>
                 <p className="mt-1 text-3xl font-semibold text-slate-900">
-                  $4.99<span className="text-base font-normal text-slate-500">/mo</span>
+                  ${PRICES.monthly.amount}<span className="text-base font-normal text-slate-500">/mo</span>
                 </p>
+                <p className="text-sm text-slate-500">or {PRICES.annual.label} — save 33%</p>
                 <ul className="mt-5 flex flex-1 flex-col gap-2 text-sm text-slate-700">
-                  {PLUS.map((f) => (
+                  {[...PLUS_FEATURES, "Everything in Free"].map((f) => (
                     <li key={f}>✓ {f}</li>
                   ))}
                 </ul>
-                <div className="mt-6">
-                  <WaitlistButton />
-                </div>
+                <Link href="/checkout?plan=monthly" className="mt-6 rounded-xl bg-teal-700 px-6 py-3 text-center font-semibold text-white hover:bg-teal-800">
+                  Get Plus
+                </Link>
               </div>
             </div>
-            <p className="mt-6 text-center text-xs text-slate-500">During the demo, every feature is unlocked for everyone.</p>
+            <p className="mt-6 text-center text-xs text-slate-500">
+              Checkout runs in test mode for the demo (test card shown on the page, no real charge). We never take money from lenders or sell your data.
+            </p>
           </div>
         </section>
       </main>
