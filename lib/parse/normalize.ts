@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { expandScheduleRule, isValidISODate, normalizeProvider, roundMoney } from "@/lib/engine";
+import { addDays, addMonths, expandScheduleRule, isValidISODate, normalizeProvider, roundMoney } from "@/lib/engine";
 import type { PlanDraft } from "@/lib/plan-draft";
 
 /**
@@ -61,14 +61,32 @@ export function llmPlanToDraft(p: LlmPlan, id: string): PlanDraft {
   // A rule describes the payments not listed explicitly (e.g. "first $40 charged today, then
   // 3 payments every 2 weeks"). Without a per-payment amount, the remainder is split evenly.
   const rule = p.scheduleRule;
-  if (rule && rule.count && rule.firstDueDate && isValidISODate(rule.firstDueDate)) {
+  // "$40 charged today, then $40 every 2 weeks": the email gives the interval but not the next date.
+  // That date follows from the last dated payment plus the interval, so we compute it here rather
+  // than drop the remaining payments.
+  let firstDueDate = rule?.firstDueDate && isValidISODate(rule.firstDueDate) ? rule.firstDueDate : null;
+  const lastDated = installments.map((i) => i.dueDate).filter(Boolean).sort().pop();
+  if (rule && rule.count && !firstDueDate && lastDated) {
+    if (rule.intervalDays && rule.intervalDays > 0) firstDueDate = addDays(lastDated, rule.intervalDays);
+    else if (rule.intervalMonths && rule.intervalMonths > 0) firstDueDate = addMonths(lastDated, rule.intervalMonths);
+    if (firstDueDate) missing.delete("scheduleRule.firstDueDate");
+  }
+  if (rule && rule.count && firstDueDate) {
     const explicitKnown = installments.every((i) => i.amount != null);
     const remainder =
       totalAmount != null && explicitKnown ? roundMoney(totalAmount - installments.reduce((s, i) => s + (i.amount ?? 0), 0)) : null;
+    // The rule should describe only the payments not listed. If the model counted the listed ones
+    // too ("4 payments" with the first already charged), the amounts tell us how many remain.
+    let count = rule.count;
+    const per = positive(rule.amount);
+    if (per != null && remainder != null && installments.length > 0) {
+      const fits = remainder / per;
+      if (Math.abs(fits - Math.round(fits)) < 0.01 && Math.round(fits) >= 1 && Math.round(fits) < count) count = Math.round(fits);
+    }
     const expanded = expandScheduleRule({
-      count: rule.count,
-      firstDueDate: rule.firstDueDate,
-      amount: positive(rule.amount),
+      count,
+      firstDueDate,
+      amount: per,
       total: positive(remainder),
       intervalDays: rule.intervalDays,
       intervalMonths: rule.intervalMonths,
@@ -81,6 +99,9 @@ export function llmPlanToDraft(p: LlmPlan, id: string): PlanDraft {
     } else if (installments.length > 0) {
       missing.add("remaining payments");
     }
+  } else if (rule && rule.count && installments.length > 0) {
+    // A rule we can't place on the calendar: keep what we know and ask the user for the rest.
+    missing.add("remaining payments");
   }
 
   if (installments.length === 0) {

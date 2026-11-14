@@ -48,6 +48,67 @@ describe("llmPlanToDraft", () => {
     ]);
   });
 
+  it('"$40 charged today, then every 2 weeks": the next date follows from the paid payment', () => {
+    const d = llmPlanToDraft(
+      {
+        ...base,
+        totalAmount: 160,
+        installments: [{ dueDate: "2026-11-14", amount: 40, status: "paid" }],
+        scheduleRule: { count: 3, amount: 40, intervalDays: 14, intervalMonths: null, firstDueDate: null },
+        missingFields: ["scheduleRule.firstDueDate"],
+      },
+      "x",
+    );
+    expect(d.installments.map((i) => [i.dueDate, i.amount, i.status])).toEqual([
+      ["2026-11-14", 40, "paid"],
+      ["2026-11-28", 40, "upcoming"],
+      ["2026-12-12", 40, "upcoming"],
+      ["2026-12-26", 40, "upcoming"],
+    ]);
+    expect(d.missingFields).toEqual([]);
+  });
+
+  it("does not double-count when the rule's count includes the payment already listed", () => {
+    const d = llmPlanToDraft(
+      {
+        ...base,
+        totalAmount: 160,
+        installments: [{ dueDate: "2026-11-14", amount: 40, status: "paid" }],
+        scheduleRule: { count: 4, amount: 40, intervalDays: 14, intervalMonths: null, firstDueDate: null },
+      },
+      "x",
+    );
+    expect(d.installments).toHaveLength(4);
+    expect(d.installments.reduce((s, i) => s + (i.amount ?? 0), 0)).toBe(160);
+  });
+
+  it("a monthly rule continues one month after the down payment", () => {
+    const d = llmPlanToDraft(
+      {
+        ...base,
+        totalAmount: 300,
+        installments: [{ dueDate: "2026-11-14", amount: 100, status: "paid" }],
+        scheduleRule: { count: 2, amount: 100, intervalDays: null, intervalMonths: 1, firstDueDate: null },
+      },
+      "x",
+    );
+    expect(d.installments.map((i) => i.dueDate)).toEqual(["2026-11-14", "2026-12-14", "2027-01-14"]);
+  });
+
+  it("a rule with no date to start from is not guessed: the remaining payments are flagged", () => {
+    const d = llmPlanToDraft(
+      {
+        ...base,
+        totalAmount: 160,
+        installments: [{ dueDate: null, amount: 40, status: "upcoming" }],
+        scheduleRule: { count: 3, amount: 40, intervalDays: 14, intervalMonths: null, firstDueDate: null },
+      },
+      "x",
+    );
+    expect(d.installments).toHaveLength(1);
+    expect(d.missingFields).toEqual(expect.arrayContaining(["remaining payments", "installment dates"]));
+  });
+
   it("keeps explicitly listed payments and normalizes the provider name", () => {
     const d = llmPlanToDraft(
       {
