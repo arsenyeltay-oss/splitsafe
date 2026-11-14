@@ -73,3 +73,9 @@ Judgment calls made during the build, so reviewers can see what was decided and 
 - **Return mechanic: the weekly check-in.** The app stores the date the balance refers to (`asOf`). On a later visit it replays the period with the same simulation, asks which BNPL autopays went through (a missed one is added back to the balance estimate and stays due), lets the user correct the balance, rolls the payday forward, and records the check-in. Payoff progress shows on the debt-free card.
 - **Demo time acceleration:** "Simulate coming back a week later" recreates the sample as if it had been set up 7 days ago. The check-in then runs on real logic, not a canned screen.
 - **Removed:** the Plus waitlist modal, which became a dead end once the real checkout existed.
+
+## Free vs Plus features
+
+- **Safe to spend (free):** the lowest projected balance before the next payday minus the buffer, floored at $0. Spending it today lowers every later day by the same amount, so it's exactly the largest safe amount. It's free because it's the daily reason to open the app.
+- **Pay off early (Plus):** the payoff estimate discounts the remaining installments at the plan's APR (an amortized loan's remaining principal). 0% plans just sum. A date counts as safe if no day ends below the buffer and lower than it would without the payoff (the same rule as "Can I afford this?"). Dates are only suggested while at least two payments remain, and amounts are labeled as estimates (providers quote exact payoffs).
+- **Free teaser, paid detail:** free users see the best interest saving ("could save about $15"), so the value of Plus is concrete before the paywall.

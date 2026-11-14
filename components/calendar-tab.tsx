@@ -5,6 +5,7 @@ import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Too
 import { debtSummary, nextDangerDay, nextPaycheckInsight, payoffProgress, simulate } from "@/lib/engine";
 import type { CashEvent, CashProfile, DayResult, FixAction, ISODate, Plan } from "@/lib/engine";
 import { FixSuggestions } from "./fix-suggestions";
+import { SafeToSpendStrip } from "./safe-to-spend";
 import { formatDate, formatMoney, formatMoneyShort, weekday } from "@/lib/ui-format";
 import { buildIcs } from "@/lib/ics";
 import { Badge, Button, Card, cx } from "./ui";
@@ -29,6 +30,7 @@ export function CalendarTab({
   const days = useMemo(() => simulate(profile, plans, today), [profile, plans, today]);
   return (
     <div className="flex flex-col gap-6">
+      <SafeToSpendStrip days={days} profile={profile} today={today} />
       <HeadlineCards days={days} profile={profile} plans={plans} today={today} checkIns={checkIns} />
       <FixSuggestions profile={profile} plans={plans} today={today} onMovePayment={onMovePayment} />
       <BalanceChart days={days} buffer={profile.buffer} today={today} />

@@ -9,10 +9,13 @@ export type BillingInterval = keyof typeof PRICES;
 export const PLUS_FEATURES = [
   "Unlimited “Can I afford this?” checks (free plan: 3 a month)",
   "Calendar alerts: every BNPL payment and danger day in Google, Apple or Outlook Calendar, with reminders",
+  "Pay-off-early planner: the earliest safe date to clear each plan and the interest you'd save",
 ];
 
 export const FREE_FEATURES = [
   "90-day cash calendar with danger days",
+  "“Safe to spend until payday” number",
+  "Weekly check-in and payoff progress",
   "“How to fix” options for your next danger day",
   "Paste BNPL emails, or add plans by hand",
   "Rescue mode and hardship messages — always free",

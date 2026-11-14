@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import { PROVIDERS, sumMoney } from "@/lib/engine";
-import type { ISODate, Plan } from "@/lib/engine";
+import type { CashProfile, ISODate, Plan } from "@/lib/engine";
 import { draftProblems, draftToPlan, emptyDraft, hasProblems, planToDraft, type PlanDraft } from "@/lib/plan-draft";
 import { formatDate, formatMoney } from "@/lib/ui-format";
 import { PasteEmails } from "./paste-emails";
+import { PayoffPlanner } from "./payoff-planner";
 import { PlanEditor } from "./plan-editor";
 import { Badge, Button, Card, EmptyState, Modal } from "./ui";
 
 export function PlansTab({
   plans,
+  profile,
+  isPlus,
+  onNeedPlus,
   today,
   onSave,
   onAdd,
@@ -18,6 +22,9 @@ export function PlansTab({
   onLoadSample,
 }: {
   plans: Plan[];
+  profile: CashProfile | null;
+  isPlus: boolean;
+  onNeedPlus: () => void;
   today: ISODate;
   onSave: (p: Plan) => void;
   onAdd: (plans: Plan[]) => void;
@@ -50,6 +57,10 @@ export function PlansTab({
           Add a plan manually
         </Button>
       </div>
+
+      {profile && plans.length > 0 && !pasting && (
+        <PayoffPlanner profile={profile} plans={plans} today={today} isPlus={isPlus} onNeedPlus={onNeedPlus} />
+      )}
 
       {pasting && (
         <PasteEmails

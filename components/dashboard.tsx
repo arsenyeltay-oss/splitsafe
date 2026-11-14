@@ -206,7 +206,12 @@ export function Dashboard() {
             needsProfile
           ))}
         {tab === "plans" && (
-          <PlansTab plans={state.plans} today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()} />
+          <PlansTab
+            plans={state.plans}
+            profile={state.profile}
+            isPlus={isPlus(state)}
+            onNeedPlus={() => setPaywall("The payoff planner is part of Plus: the earliest safe date to clear each plan and the interest you'd save.")}
+            today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()} />
         )}
         {tab === "cash" && (
           <CashFlowForm
