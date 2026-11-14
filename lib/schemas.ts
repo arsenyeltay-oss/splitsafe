@@ -42,6 +42,8 @@ export const subscriptionSchema = z.object({
   plan: z.literal("plus"),
   interval: z.enum(["monthly", "annual"]),
   since: isoDate,
+  /** Last day of the free trial; billing would start the day after. */
+  trialEndsAt: isoDate,
   /** Bought through the test-mode checkout: no real money moved. */
   testMode: z.boolean(),
 });
@@ -54,9 +56,8 @@ export const appStateSchema = z.object({
   /** Day the stored balance refers to; a later visit triggers a check-in. */
   asOf: isoDate.nullable().default(null),
   checkIns: z.array(z.object({ date: isoDate, paid: z.number().int(), missed: z.number().int() })).default([]),
-  subscription: subscriptionSchema.nullable().default(null),
-  /** Free-tier usage counter, reset each calendar month ("YYYY-MM"). */
-  usage: z.object({ month: z.string(), affordChecks: z.number().int() }).default({ month: "", affordChecks: 0 }),
+  // .catch(null): a subscription saved by an older version without a trial date is simply dropped.
+  subscription: subscriptionSchema.nullable().default(null).catch(null),
 });
 
 export type Subscription = z.infer<typeof subscriptionSchema>;

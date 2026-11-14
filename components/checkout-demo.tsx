@@ -6,7 +6,7 @@ import { checkAffordability, PROVIDERS, roundMoney } from "@/lib/engine";
 import type { ProviderId, PurchaseInput } from "@/lib/engine";
 import { samplePlans, sampleProfile } from "@/lib/sample-data";
 import { localToday, formatMoney } from "@/lib/ui-format";
-import { useAppState } from "@/lib/use-app-state";
+import { hasPlusAccess, useAppState } from "@/lib/use-app-state";
 import { verdictCopy } from "@/lib/verdict-copy";
 import { cx } from "./ui";
 
@@ -43,11 +43,12 @@ export function CheckoutDemo() {
   useEffect(() => setToday(localToday()), []);
 
   const product = PRODUCTS.find((p) => p.id === productId)!;
-  const usingSample = !state.profile;
+  // Own numbers are a Plus feature; everyone else sees the check on the sample persona.
+  const usingSample = !state.profile || !hasPlusAccess(state);
   const data = useMemo(() => {
     if (!today) return null;
-    return state.profile ? { profile: state.profile, plans: state.plans } : { profile: sampleProfile(today), plans: samplePlans(today) };
-  }, [state, today]);
+    return !usingSample && state.profile ? { profile: state.profile, plans: state.plans } : { profile: sampleProfile(today), plans: samplePlans(today) };
+  }, [state, today, usingSample]);
 
   const input: PurchaseInput | null =
     method === "card" ? null : { amount: product.price, provider, term: method === "payin4" ? { kind: "payin4" } : { kind: "monthly", months, apr: 0 } };

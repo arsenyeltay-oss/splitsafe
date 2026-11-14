@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { CashProfile, Plan } from "@/lib/engine";
 import { appStateSchema, type AppState, type Subscription } from "@/lib/schemas";
 import { STORAGE_KEY } from "@/lib/storage-key";
+import { addDays } from "@/lib/engine";
+import { TRIAL_DAYS } from "@/lib/pricing";
 import { localToday } from "@/lib/ui-format";
 
 export const EMPTY_STATE: AppState = {
@@ -14,12 +16,7 @@ export const EMPTY_STATE: AppState = {
   asOf: null,
   checkIns: [],
   subscription: null,
-  usage: { month: "", affordChecks: 0 },
 };
-
-/** Free plan: this many "Can I afford this?" checks per calendar month. */
-export const FREE_AFFORD_CHECKS = 3;
-const thisMonth = () => localToday().slice(0, 7);
 
 function load(): AppState {
   try {
@@ -81,16 +78,13 @@ export function useAppState() {
         const date = localToday();
         return { ...s, profile, plans, asOf: date, checkIns: [...s.checkIns, { date, paid, missed }] };
       }),
+    /** Starts Plus with a free trial (test mode: no money moves). */
     startPlus: (interval: Subscription["interval"]) =>
-      update((s) => ({ ...s, subscription: { plan: "plus", interval, since: localToday(), testMode: true } })),
-    cancelPlus: () => update((s) => ({ ...s, subscription: null })),
-    /** Counts one affordability check; returns nothing, read `affordChecksLeft` for the limit. */
-    recordAffordCheck: () =>
       update((s) => {
-        const month = thisMonth();
-        const used = s.usage.month === month ? s.usage.affordChecks : 0;
-        return { ...s, usage: { month, affordChecks: used + 1 } };
+        const since = localToday();
+        return { ...s, subscription: { plan: "plus", interval, since, trialEndsAt: addDays(since, TRIAL_DAYS - 1), testMode: true } };
       }),
+    cancelPlus: () => update((s) => ({ ...s, subscription: null })),
   };
 }
 
@@ -98,9 +92,5 @@ export type AppStore = ReturnType<typeof useAppState>;
 
 export const isPlus = (s: AppState): boolean => s.subscription !== null;
 
-/** Remaining free checks this month (Infinity on Plus). */
-export function affordChecksLeft(s: AppState): number {
-  if (isPlus(s)) return Infinity;
-  const used = s.usage.month === thisMonth() ? s.usage.affordChecks : 0;
-  return Math.max(0, FREE_AFFORD_CHECKS - used);
-}
+/** Plus features run for subscribers, and for everyone on the clearly labeled sample data. */
+export const hasPlusAccess = (s: AppState): boolean => isPlus(s) || s.isSample;

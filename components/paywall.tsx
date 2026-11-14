@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { PLUS_FEATURES, PRICES, type BillingInterval } from "@/lib/pricing";
+import { PLUS_FEATURES, PRICES, ROI_LINE, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
 import { cx, Modal } from "./ui";
 
 /** Shown when a Free user hits a Plus feature. Leads to the test-mode checkout. */
 export function Paywall({ open, onClose, reason }: { open: boolean; onClose: () => void; reason: string }) {
   const [interval, setInterval] = useState<BillingInterval>("annual");
   return (
-    <Modal open={open} onClose={onClose} title="Upgrade to SplitSafe Plus">
+    <Modal open={open} onClose={onClose} title={`Try SplitSafe Plus free for ${TRIAL_DAYS} days`}>
       <p className="text-sm text-slate-700">{reason}</p>
+      <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">💡 {ROI_LINE}</p>
       <ul className="mt-4 flex flex-col gap-2 text-sm text-slate-800">
         {PLUS_FEATURES.map((f) => (
           <li key={f} className="flex gap-2">
@@ -36,9 +37,11 @@ export function Paywall({ open, onClose, reason }: { open: boolean; onClose: () 
         href={`/checkout?plan=${interval}`}
         className="mt-5 block rounded-xl bg-teal-700 px-4 py-3 text-center font-semibold text-white hover:bg-teal-800"
       >
-        Continue to checkout
+        Start free trial — $0 today
       </Link>
-      <p className="mt-3 text-center text-xs text-slate-500">Test mode for the demo: you&apos;ll see a test card to use. No real charge.</p>
+      <p className="mt-3 text-center text-xs text-slate-500">
+        Cancel anytime during the trial. Test mode for the demo: a test card is shown on the next page, no real charge.
+      </p>
     </Modal>
   );
 }

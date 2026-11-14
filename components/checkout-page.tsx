@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { checkTestCard, PLUS_FEATURES, PRICES, type BillingInterval } from "@/lib/pricing";
+import { addDays } from "@/lib/engine";
+import { checkTestCard, PLUS_FEATURES, PRICES, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
 import { useAppState } from "@/lib/use-app-state";
-import { formatMoney } from "@/lib/ui-format";
+import { formatDate, formatMoney, localToday } from "@/lib/ui-format";
 import { Button, Card, cx, Field, Input } from "./ui";
 
 const TEST_CARD = { number: "4242 4242 4242 4242", expiry: "12 / 30", cvc: "123", zip: "10001" };
@@ -30,6 +31,7 @@ export function CheckoutPage() {
   }, []);
 
   const price = PRICES[interval];
+  const firstCharge = addDays(localToday(), TRIAL_DAYS);
   const alreadyPlus = store.ready && store.state.subscription !== null && status === "form";
 
   const pay = () => {
@@ -76,9 +78,9 @@ export function CheckoutPage() {
           <p className="text-4xl" aria-hidden>
             🎉
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-900">You&apos;re on SplitSafe Plus</h1>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Your {TRIAL_DAYS}-day free trial has started</h1>
           <p className="mt-2 text-slate-600">
-            {price.label} (test mode). Unlimited affordability checks and calendar alerts are unlocked.
+            Every Plus feature now runs on your own numbers. After the trial: {price.label} from {formatDate(firstCharge)} (test mode, nothing will be charged).
           </p>
           <Link href="/app" className="mt-6 inline-block rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white hover:bg-teal-800">
             Back to my calendar
@@ -87,7 +89,10 @@ export function CheckoutPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-[1fr_20rem]">
           <Card>
-            <h1 className="text-xl font-semibold text-slate-900">Pay for SplitSafe Plus</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Start your {TRIAL_DAYS}-day free trial</h1>
+            <p className="mt-1 text-sm text-slate-600">
+              $0.00 today. {price.label} starting {formatDate(firstCharge)} unless you cancel before then.
+            </p>
             {alreadyPlus && <p className="mt-2 text-sm text-emerald-700">You already have Plus. You can switch billing below.</p>}
             <form
               className="mt-5 flex flex-col gap-4"
@@ -129,7 +134,7 @@ export function CheckoutPage() {
                 </p>
               )}
               <Button type="submit" size="lg" disabled={status === "processing"}>
-                {status === "processing" ? "Processing…" : `Pay ${formatMoney(price.amount)} (test)`}
+                {status === "processing" ? "Processing…" : `Start free trial (test)`}
               </Button>
               <p className="text-xs text-slate-500">Card details are checked in your browser only and are never stored or sent anywhere.</p>
             </form>
@@ -154,6 +159,10 @@ export function CheckoutPage() {
             </ul>
             <div className="mt-4 flex justify-between border-t border-slate-200 pt-3 font-semibold text-slate-900">
               <span>Due today</span>
+              <span>$0.00</span>
+            </div>
+            <div className="mt-1 flex justify-between text-sm text-slate-600">
+              <span>From {formatDate(firstCharge)}</span>
               <span>{formatMoney(price.amount)}</span>
             </div>
           </Card>

@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { addDays } from "@/lib/engine";
-import type { FixAction } from "@/lib/engine";
-import { PRICES } from "@/lib/pricing";
+import { addDays, daysBetween } from "@/lib/engine";
+import type { CashProfile, FixAction, Plan } from "@/lib/engine";
 import { samplePlans, sampleProfile } from "@/lib/sample-data";
-import { affordChecksLeft, isPlus, useAppState } from "@/lib/use-app-state";
+import { hasPlusAccess, useAppState } from "@/lib/use-app-state";
 import { localToday } from "@/lib/ui-format";
 import { AffordTab } from "./afford-tab";
 import { CalendarTab } from "./calendar-tab";
 import { CashFlowForm } from "./cash-flow-form";
 import { CheckInCard } from "./check-in-card";
 import { Paywall } from "./paywall";
+import { PlusGate } from "./plus-gate";
 import { PlansTab } from "./plans-tab";
 import { RescueTab } from "./rescue-tab";
 import { Badge, Button, cx, Disclaimer, EmptyState } from "./ui";
+
+const PLUS_PITCH = "Plus runs everything on your own numbers: your 90-day calendar, danger-day fixes, “Can I afford this?”, weekly check-ins, the payoff planner and calendar alerts.";
 
 const TABS = [
   { id: "calendar", label: "Calendar" },
@@ -53,6 +55,19 @@ export function Dashboard() {
 
   useEffect(() => setToday(localToday()), []);
 
+  /** A reviewed bank import replaces the cash profile; its plans join the user's own (or replace the sample). */
+  const importBank = (profile: CashProfile, plans: Plan[]) => {
+    store.replaceAll({
+      ...state,
+      profile,
+      plans: state.isSample ? plans : [...state.plans, ...plans],
+      isSample: false,
+      asOf: localToday(),
+      checkIns: state.isSample ? [] : state.checkIns,
+    });
+    setTab("calendar");
+  };
+
   /** The provider agreed to a new date: update that one installment. */
   const movePayment = (a: Extract<FixAction, { kind: "move" }>) => {
     const plan = state.plans.find((p) => p.id === a.planId);
@@ -89,6 +104,7 @@ export function Dashboard() {
   }
 
   const isEmpty = state.plans.length === 0 && !state.profile;
+  const access = hasPlusAccess(state);
   const needsProfile = (
     <EmptyState title="Add your cash flow first" body="We need your balance, paycheck and payday to project your days. It takes about a minute.">
       <Button onClick={() => setTab("cash")}>Set up cash flow</Button>
@@ -108,16 +124,21 @@ export function Dashboard() {
           <Link href="/demo/checkout" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50">
             See it at checkout →
           </Link>
-          {isPlus(state) ? (
+          {state.subscription ? (
             <span className="flex items-center gap-1">
-              <Badge tone="teal">Plus ✓ (test)</Badge>
+              <Badge tone="teal">
+                {state.subscription.trialEndsAt >= today
+                  ? `Plus · trial, ${daysBetween(today, state.subscription.trialEndsAt) + 1} day${daysBetween(today, state.subscription.trialEndsAt) === 0 ? "" : "s"} left`
+                  : "Plus ✓"}{" "}
+                (test)
+              </Badge>
               <Button variant="ghost" size="sm" onClick={() => confirm("Cancel Plus? (test mode — nothing was charged)") && store.cancelPlus()}>
                 Cancel
               </Button>
             </span>
           ) : (
-            <Button size="sm" onClick={() => setPaywall("Plus unlocks unlimited affordability checks and calendar alerts.")}>
-              Upgrade · {PRICES.monthly.label}
+            <Button size="sm" onClick={() => setPaywall(PLUS_PITCH)}>
+              Start free trial
             </Button>
           )}
           <Button variant="secondary" size="sm" onClick={() => loadSample()}>
@@ -133,7 +154,7 @@ export function Dashboard() {
 
       {state.isSample && (
         <div className="rounded-xl bg-teal-50 px-4 py-3 text-sm text-teal-900 ring-1 ring-teal-200">
-          <strong>Sample data:</strong> Sarah, 31 — paid $1,450 every two weeks, rent $1,200 a month, $380 in checking, three BNPL plans. Edit anything, or{" "}
+          <strong>Demo with sample data — every Plus feature is unlocked.</strong> Sarah, 31 — paid $1,450 every two weeks, rent $1,200 a month, $380 in checking, three BNPL plans. Edit anything, or{" "}
           <button type="button" className="font-medium underline underline-offset-2" onClick={() => store.reset()}>
             start fresh with your own
           </button>
@@ -145,7 +166,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {state.profile && state.asOf && state.asOf < today && (
+      {access && state.profile && state.asOf && state.asOf < today && (
         <CheckInCard
           key={state.asOf}
           profile={state.profile}
@@ -165,7 +186,7 @@ export function Dashboard() {
             Try it with sample data
           </Button>
           <Button size="lg" variant="secondary" onClick={() => setTab("plans")}>
-            Add my plans
+            Import my bank statement or plans
           </Button>
         </EmptyState>
       ) : null}
@@ -192,15 +213,25 @@ export function Dashboard() {
 
       <main role="tabpanel">
         {tab === "calendar" &&
-          (state.profile ? (
+          (state.profile && !access ? (
+            <PlusGate
+              title="Your calendar is part of SplitSafe Plus"
+              body="See every day of the next 90, the payments behind each danger day, how much is safe to spend, and how to fix it."
+              profile={state.profile}
+              plans={state.plans}
+              today={today}
+              onStartTrial={() => setPaywall(PLUS_PITCH)}
+              onTryDemo={() => loadSample()}
+            />
+          ) : state.profile ? (
             <CalendarTab
               profile={state.profile}
               plans={state.plans}
               today={today}
               checkIns={state.checkIns.length}
               onMovePayment={movePayment}
-              canExport={isPlus(state)}
-              onNeedPlus={() => setPaywall("Calendar alerts are part of Plus: every BNPL payment and danger day in your calendar, with reminders.")}
+              canExport={access}
+              onNeedPlus={() => setPaywall(PLUS_PITCH)}
             />
           ) : (
             needsProfile
@@ -209,9 +240,10 @@ export function Dashboard() {
           <PlansTab
             plans={state.plans}
             profile={state.profile}
-            isPlus={isPlus(state)}
-            onNeedPlus={() => setPaywall("The payoff planner is part of Plus: the earliest safe date to clear each plan and the interest you'd save.")}
-            today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()} />
+            isPlus={access}
+            onNeedPlus={() => setPaywall(PLUS_PITCH)}
+            today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()}
+            onImportBank={importBank} />
         )}
         {tab === "cash" && (
           <CashFlowForm
@@ -224,15 +256,16 @@ export function Dashboard() {
           />
         )}
         {tab === "afford" &&
-          (state.profile ? (
-            <AffordTab
-              profile={state.profile}
-              plans={state.plans}
+          (state.profile && !access ? (
+            <PlusGate
+              title="“Can I afford this?” is part of SplitSafe Plus"
+              body="Before you click Pay in 4, see SAFE, TIGHT or NO, the exact day it would bite, a safe date to buy instead and a safer term."
               today={today}
-              checksLeft={affordChecksLeft(state)}
-              onCheck={store.recordAffordCheck}
-              onNeedPlus={() => setPaywall("You've used your 3 free checks this month. Plus gives you unlimited checks before every purchase.")}
+              onStartTrial={() => setPaywall(PLUS_PITCH)}
+              onTryDemo={() => loadSample()}
             />
+          ) : state.profile ? (
+            <AffordTab profile={state.profile} plans={state.plans} today={today} />
           ) : (
             needsProfile
           ))}

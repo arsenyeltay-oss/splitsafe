@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { FREE_FEATURES, PLUS_FEATURES, PRICES } from "@/lib/pricing";
+import { FREE_FEATURES, PLUS_FEATURES, PRICES, TRIAL_DAYS } from "@/lib/pricing";
 
 const STEPS = [
   {
     n: "1",
-    title: "Paste",
-    body: "Drop in your Klarna, Affirm, Afterpay, PayPal, Zip or Sezzle confirmation emails. We pull out every payment — you check them.",
+    title: "Import",
+    body: "Drop in a bank statement CSV — read on your device, never uploaded — or paste your Klarna, Affirm, Afterpay or PayPal emails. We find every BNPL payment; you check them.",
   },
   {
     n: "2",
@@ -57,10 +57,13 @@ export default function Landing() {
               <li>
                 <Link href="/app?sample=1" className="font-medium text-teal-800 underline">Try it with sample data</Link> — Calendar: danger day, its cause, and &ldquo;How to fix&rdquo;.
               </li>
+              <li>Can I afford this? → Check it. Then the sample banner → &ldquo;Simulate coming back a week later&rdquo; → the weekly check-in.</li>
               <li>Plans → Paste confirmation emails → Paste 3 sample emails → Extract plans (live Claude parsing).</li>
-              <li>Can I afford this? → Check it (3 free checks a month, then the Plus paywall).</li>
-              <li>Upgrade → test checkout with card 4242 4242 4242 4242, any future date, any CVC.</li>
-              <li>Sample banner → &ldquo;Simulate coming back a week later&rdquo; → the weekly check-in.</li>
+              <li>
+                Start fresh with your own data: Plans → Import bank statement → Use a sample statement → Use this. Your own calendar is a Plus feature,
+                so you&apos;ll see a teaser with your danger-day count.
+              </li>
+              <li>Start free trial → test checkout with card 4242 4242 4242 4242, any future date, any CVC → your calendar unlocks.</li>
               <li>
                 <Link href="/demo/checkout" className="font-medium text-teal-800 underline">Checkout demo</Link> — the same check next to Pay in 4 in a store.
               </li>
@@ -126,10 +129,10 @@ export default function Landing() {
             <h2 id="pricing" className="text-center text-3xl font-semibold tracking-tight text-slate-900">
               Simple pricing
             </h2>
-            <p className="mt-2 text-center text-slate-600">The tools you need in a tough month are always free.</p>
+            <p className="mt-2 text-center text-slate-600">One plan with everything, {TRIAL_DAYS} days free. Help in a tough month is always free.</p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="flex flex-col rounded-2xl p-6 ring-1 ring-slate-200">
-                <h3 className="text-lg font-semibold text-slate-900">Free</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Always free</h3>
                 <p className="mt-1 text-3xl font-semibold text-slate-900">$0</p>
                 <ul className="mt-5 flex flex-1 flex-col gap-2 text-sm text-slate-700">
                   {FREE_FEATURES.map((f) => (
@@ -137,7 +140,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <Link href="/app?sample=1" className="mt-6 rounded-xl bg-white px-6 py-3 text-center font-semibold text-slate-900 ring-1 ring-slate-300 hover:bg-slate-50">
-                  Start free
+                  Explore the demo
                 </Link>
               </div>
               <div className="flex flex-col rounded-2xl p-6 ring-2 ring-teal-700">
@@ -147,12 +150,12 @@ export default function Landing() {
                 </p>
                 <p className="text-sm text-slate-500">or {PRICES.annual.label} — save 33%</p>
                 <ul className="mt-5 flex flex-1 flex-col gap-2 text-sm text-slate-700">
-                  {[...PLUS_FEATURES, "Everything in Free"].map((f) => (
+                  {PLUS_FEATURES.map((f) => (
                     <li key={f}>✓ {f}</li>
                   ))}
                 </ul>
                 <Link href="/checkout?plan=monthly" className="mt-6 rounded-xl bg-teal-700 px-6 py-3 text-center font-semibold text-white hover:bg-teal-800">
-                  Get Plus
+                  Start {TRIAL_DAYS}-day free trial
                 </Link>
               </div>
             </div>

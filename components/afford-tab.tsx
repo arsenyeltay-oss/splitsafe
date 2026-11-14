@@ -18,16 +18,10 @@ export function AffordTab({
   profile,
   plans,
   today,
-  checksLeft,
-  onCheck,
-  onNeedPlus,
 }: {
   profile: CashProfile;
   plans: Plan[];
   today: ISODate;
-  checksLeft: number;
-  onCheck: () => void;
-  onNeedPlus: () => void;
 }) {
   const [amount, setAmount] = useState("240");
   const [provider, setProvider] = useState<ProviderId>("klarna");
@@ -45,8 +39,6 @@ export function AffordTab({
     if (kind === "monthly" && (!Number.isInteger(m) || m < 1 || m > 60)) return setError("Months must be between 1 and 60.");
     if (kind === "monthly" && (Number.isNaN(a) || a < 0 || a > 100)) return setError("APR must be between 0 and 100.");
     setError(null);
-    if (checksLeft <= 0) return onNeedPlus();
-    onCheck();
     const input: PurchaseInput = { amount: amt, provider, term: kind === "payin4" ? { kind: "payin4" } : { kind: "monthly", months: m, apr: a } };
     setResult({ input, report: checkAffordability(profile, plans, input, today) });
   };
@@ -99,11 +91,6 @@ export function AffordTab({
           <Button type="submit" size="lg">
             Check it
           </Button>
-          <p className="text-center text-xs text-slate-500">
-            {Number.isFinite(checksLeft)
-              ? `${checksLeft} of 3 free checks left this month`
-              : "Plus: unlimited checks"}
-          </p>
         </form>
       </Card>
 

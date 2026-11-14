@@ -79,3 +79,22 @@ Judgment calls made during the build, so reviewers can see what was decided and 
 - **Safe to spend (free):** the lowest projected balance before the next payday minus the buffer, floored at $0. Spending it today lowers every later day by the same amount, so it's exactly the largest safe amount. It's free because it's the daily reason to open the app.
 - **Pay off early (Plus):** the payoff estimate discounts the remaining installments at the plan's APR (an amortized loan's remaining principal). 0% plans just sum. A date counts as safe if no day ends below the buffer and lower than it would without the payoff (the same rule as "Can I afford this?"). Dates are only suggested while at least two payments remain, and amounts are labeled as estimates (providers quote exact payoffs).
 - **Free teaser, paid detail:** free users see the best interest saving ("could save about $15"), so the value of Plus is concrete before the paywall.
+
+## Pricing v2: everything in Plus, 7-day trial
+
+- **What's Plus:** every feature that runs on the user's own numbers. **Free:** the full demo on sample data (so the jury and new users see all of it), importing or entering data, and Rescue mode (hardship help is never paywalled).
+- **Teaser before the paywall:** a locked calendar shows a real count from the user's data ("We found N short days in your next 90 days, the first in X days"), so the value is concrete.
+- **Trial:** 7 days, $0 today, then the chosen plan. It's a test-mode checkout, and the badge shows the trial days left. The earlier "3 free checks a month" meter was removed with this model.
+- **ROI wording is hedged** ("some big US banks… around $34–35") and comes with a verify note, because fees change.
+
+## Bank statement import (privacy-first bank connection)
+
+- **CSV, read in the browser:** we chose this over an aggregator (Plaid) because it needs no bank credentials and no server, and nothing is uploaded or stored. Plaid or an FDX/open-banking connection is the roadmap upgrade.
+- **Parsing:** header names (Amount, or Debit/Credit; Chase's "Details" column isn't the description), or content-based detection for header-less exports (Wells Fargo). US date and money formats. 5 MB cap.
+- **Analysis (deterministic):**
+  - The paycheck is the recurring credit group (±15%) with a regular gap, preferring payroll descriptors.
+  - Bills are debits that recur monthly (gap 26–35 days, ±20%) in at least two months.
+  - Everyday spending is the average of the remaining debits, spread over four weekly entries so the projection has no artificial cliffs.
+  - BNPL payments are found by provider descriptor.
+- **No invention:** Pay in 4 remaining dates follow the product rule (4 payments, every 2 weeks) and are flagged "estimated — check them". Monthly plans leave the total and remaining payments for the user. New plans without a payment yet can't be in a statement, and the UI says to paste the email.
+- **Sample statement:** a Chase-style CSV generated for the sample persona relative to today. It goes through the same parser and analysis, and can be downloaded to try the real upload.
