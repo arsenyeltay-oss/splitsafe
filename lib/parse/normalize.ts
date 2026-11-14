@@ -65,6 +65,7 @@ export function llmPlanToDraft(p: LlmPlan, id: string): PlanDraft {
   // That date follows from the last dated payment plus the interval, so we compute it here rather
   // than drop the remaining payments.
   let firstDueDate = rule?.firstDueDate && isValidISODate(rule.firstDueDate) ? rule.firstDueDate : null;
+  const derivedStart = !firstDueDate;
   const lastDated = installments.map((i) => i.dueDate).filter(Boolean).sort().pop();
   if (rule && rule.count && !firstDueDate && lastDated) {
     if (rule.intervalDays && rule.intervalDays > 0) firstDueDate = addDays(lastDated, rule.intervalDays);
@@ -75,11 +76,12 @@ export function llmPlanToDraft(p: LlmPlan, id: string): PlanDraft {
     const explicitKnown = installments.every((i) => i.amount != null);
     const remainder =
       totalAmount != null && explicitKnown ? roundMoney(totalAmount - installments.reduce((s, i) => s + (i.amount ?? 0), 0)) : null;
-    // The rule should describe only the payments not listed. If the model counted the listed ones
-    // too ("4 payments" with the first already charged), the amounts tell us how many remain.
+    // When we computed the start ourselves, the rule must cover only the payments after the listed
+    // ones. If the model counted the listed ones too ("4 payments", first already charged), the
+    // amounts tell us how many remain. With a stated start date, overlaps are removed by date below.
     let count = rule.count;
     const per = positive(rule.amount);
-    if (per != null && remainder != null && installments.length > 0) {
+    if (derivedStart && per != null && remainder != null && installments.length > 0) {
       const fits = remainder / per;
       if (Math.abs(fits - Math.round(fits)) < 0.01 && Math.round(fits) >= 1 && Math.round(fits) < count) count = Math.round(fits);
     }

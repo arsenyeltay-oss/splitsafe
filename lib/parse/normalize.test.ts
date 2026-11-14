@@ -82,6 +82,19 @@ describe("llmPlanToDraft", () => {
     expect(d.installments.reduce((s, i) => s + (i.amount ?? 0), 0)).toBe(160);
   });
 
+  it("a rule with a stated start that includes the listed first payment keeps every payment", () => {
+    const d = llmPlanToDraft(
+      {
+        ...base,
+        totalAmount: 240,
+        installments: [{ dueDate: "2026-11-20", amount: 60, status: "upcoming" }],
+        scheduleRule: { count: 4, amount: 60, intervalDays: 14, intervalMonths: null, firstDueDate: "2026-11-20" },
+      },
+      "x",
+    );
+    expect(d.installments.map((i) => i.dueDate)).toEqual(["2026-11-20", "2026-12-04", "2026-12-18", "2027-01-01"]);
+  });
+
   it("a monthly rule continues one month after the down payment", () => {
     const d = llmPlanToDraft(
       {

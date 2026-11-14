@@ -127,7 +127,7 @@ npm run lint
 npm run build
 ```
 
-95 tests in 12 files. They cover bank CSV parsing (Chase/BofA layouts, debit/credit columns, header-less exports) and detection of paychecks, bills and BNPL payments, payday generation for every frequency (including month-end and the 31st), installment scheduling and rounding, the daily simulation (same-day ordering, partially paid plans, overdue installments, empty state), shortfall detection, affordability verdicts, the earliest-safe-date search, the debt-free date, rescue ranking, hardship messages, pricing and test-card checks, `.ics` export, checkout-offer detection, and LLM-output normalization. CI runs lint, tests and build on every push.
+96 tests in 12 files. They cover bank CSV parsing (Chase/BofA layouts, debit/credit columns, header-less exports) and detection of paychecks, bills and BNPL payments, payday generation for every frequency (including month-end and the 31st), installment scheduling and rounding, the daily simulation (same-day ordering, partially paid plans, overdue installments, empty state), shortfall detection, affordability verdicts, the earliest-safe-date search, the debt-free date, rescue ranking, hardship messages, pricing and test-card checks, `.ics` export, checkout-offer detection, and LLM-output normalization. CI runs lint, tests and build on every push.
 
 ## Project structure
 
