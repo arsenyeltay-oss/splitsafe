@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PROVIDERS, sumMoney } from "@/lib/engine";
 import type { CashProfile, ISODate, Plan } from "@/lib/engine";
 import { draftProblems, draftToPlan, emptyDraft, hasProblems, planToDraft, type PlanDraft } from "@/lib/plan-draft";
@@ -22,6 +22,7 @@ export function PlansTab({
   onDelete,
   onLoadSample,
   onImportBank,
+  importRequest,
 }: {
   plans: Plan[];
   profile: CashProfile | null;
@@ -33,10 +34,15 @@ export function PlansTab({
   onDelete: (id: string) => void;
   onLoadSample: () => void;
   onImportBank: (profile: CashProfile, plans: Plan[]) => void;
+  /** Bumped by the dashboard's "Import bank statement" shortcut to open the importer. */
+  importRequest: number;
 }) {
   const [editing, setEditing] = useState<PlanDraft | null>(null);
   const [showProblems, setShowProblems] = useState(false);
-  const [mode, setMode] = useState<"none" | "paste" | "bank">("none");
+  const [mode, setMode] = useState<"none" | "paste" | "bank">(importRequest > 0 ? "bank" : "none");
+  useEffect(() => {
+    if (importRequest > 0) setMode("bank");
+  }, [importRequest]);
   const pasting = mode !== "none";
 
   const startEdit = (d: PlanDraft) => {

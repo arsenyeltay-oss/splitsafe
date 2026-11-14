@@ -33,6 +33,11 @@ export function Dashboard() {
   const { state, ready } = store;
   const [today, setToday] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("calendar");
+  const [importRequest, setImportRequest] = useState(0);
+  const openBankImport = () => {
+    setTab("plans");
+    setImportRequest((n) => n + 1);
+  };
   const [paywall, setPaywall] = useState<string | null>(null);
 
   /**
@@ -121,6 +126,9 @@ export function Dashboard() {
           Split<span className="text-teal-700">Safe</span>
         </Link>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={openBankImport}>
+            🏦 Import bank statement
+          </Button>
           <Link href="/demo/checkout" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50">
             See it at checkout →
           </Link>
@@ -162,7 +170,11 @@ export function Dashboard() {
           <button type="button" className="font-medium underline underline-offset-2" onClick={() => loadSample(7)}>
             ⏩ Simulate coming back a week later
           </button>{" "}
-          to see the weekly check-in.
+          to see the weekly check-in, or{" "}
+          <button type="button" className="font-medium underline underline-offset-2" onClick={openBankImport}>
+            🏦 import a bank statement
+          </button>{" "}
+          (a sample one is built in).
         </div>
       )}
 
@@ -243,7 +255,8 @@ export function Dashboard() {
             isPlus={access}
             onNeedPlus={() => setPaywall(PLUS_PITCH)}
             today={today} onSave={store.upsertPlan} onAdd={store.addPlans} onDelete={store.deletePlan} onLoadSample={() => loadSample()}
-            onImportBank={importBank} />
+            onImportBank={importBank}
+            importRequest={importRequest} />
         )}
         {tab === "cash" && (
           <CashFlowForm
