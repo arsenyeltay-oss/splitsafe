@@ -4,7 +4,7 @@
 
 **Live demo: [splitsafe-phi.vercel.app](https://splitsafe-phi.vercel.app)** · no sign-up: click **Try it with sample data**.
 
-**Pitch deck:** [deck/SplitSafe-pitch-deck.pdf](deck/SplitSafe-pitch-deck.pdf) (10 slides; source in [deck/index.html](deck/index.html), every figure cited on the slide).
+**Pitch deck:** [deck/SplitSafe-pitch-deck.pdf](deck/SplitSafe-pitch-deck.pdf) (10 slides, built in Canva; plan and sources in [deck/PLAN.md](deck/PLAN.md), every figure cited on the slide).
 
 ![30-second tour: sample data, danger day, fix options, Can I afford this?, checkout check](docs/demo.gif)
 
