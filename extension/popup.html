@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SplitSafe</title>
+    <style>
+      body { width: 300px; margin: 0; padding: 16px; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #0f172a; background: #f8fafc; }
+      h1 { margin: 0 0 8px; font-size: 16px; }
+      h1 span { color: #0f766e; }
+      #status p { margin: 4px 0; }
+      button { margin-top: 12px; width: 100%; padding: 8px; border: 0; border-radius: 8px; background: #0f766e; color: #fff; font-weight: 600; cursor: pointer; }
+      small { display: block; margin-top: 10px; color: #64748b; }
+    </style>
+  </head>
+  <body>
+    <h1>Split<span>Safe</span></h1>
+    <div id="status">Loading…</div>
+    <button id="open" type="button">Open SplitSafe</button>
+    <small>On checkout pages showing “4 payments of $X”, we check it against your paycheck — locally, in your browser.</small>
+    <script src="popup.js"></script>
+  </body>
+</html>

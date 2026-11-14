@@ -47,3 +47,11 @@ Judgment calls made during the build, so reviewers can see what was decided and 
 - **Provider rules:** Affirm, Klarna and Afterpay follow the project brief and are marked verified as of 2026-11-14. PayPal Pay in 4, Zip and Sezzle are marked unverified, and the UI says so.
 - **Sample data** is relative to today. Groceries/gas and utilities are included so the projection doesn't drift unrealistically upward. A test checks the story (a short day within 3 weeks, and a NO with a safe date for the $240 Klarna check) on all 366 days of a year.
 - **Light theme only** for now, to guarantee accessible contrast in the time available.
+
+## Checkout integration
+
+- **No direct BNPL integration.** Klarna, Affirm, Afterpay and PayPal offer no public way for third parties to add messages inside their checkout. We demo the experience in two honest ways: a clearly labeled fictional store (`/demo/checkout`), and a working Chrome extension that operates at the page level.
+- **Extension data flow:** a content script on the SplitSafe site copies the app's localStorage into `chrome.storage.local`. Checkout pages are checked on-device with the same engine. The only permission is `storage`, and the extension makes no network calls.
+- **Detection is conservative:** only explicit "N payments of $X" / "N monthly payments of $X" / "$X/mo for N months" text is recognized. A price is never inferred from other numbers on the page. Monthly offers are evaluated at the shown payment (0% APR), because the shown payment already includes any interest.
+- **Distribution:** `npm run build` runs `build:extension` first, so the live site serves a fresh `splitsafe-extension.zip`. Build output is git-ignored.
+- **Verdict wording** lives in `lib/verdict-copy.ts` so the demo page and the extension can't drift apart. When the calendar is already short without the purchase, the copy says so instead of blaming the purchase alone.

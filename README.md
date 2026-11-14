@@ -27,6 +27,15 @@ People don't hate BNPL. They hate not seeing what's coming. SplitSafe puts every
 <img src="docs/rescue.png" width="49%" alt="Rescue mode ranking" />
 </p>
 
+### At checkout: demo page + browser extension
+
+Two ways to show the "Can I afford this?" check where people actually buy:
+
+- **[Checkout demo](https://splitsafe-phi.vercel.app/demo/checkout):** a fictional store whose checkout shows the SplitSafe verdict live as you switch items, providers and terms. No install needed.
+- **Chrome extension ([`extension/`](extension/README.md)):** it detects "4 payments of $60"-style offers on real checkout pages and shows the verdict in a small card. It uses the same engine, runs entirely on-device, and syncs your plans from the SplitSafe site. [Download the zip](https://splitsafe-phi.vercel.app/splitsafe-extension.zip), then use "Load unpacked" in `chrome://extensions`.
+
+BNPL providers don't let third parties add messages inside their own checkout, so the extension works at the page level and needs no partnership.
+
 ### Demo story (sample data)
 
 Sarah is 31 and takes home $1,450 every two weeks. Rent is $1,200 on the 1st, and she has $380 in checking. She has three plans: Klarna sneakers ($160, Pay in 4), an Afterpay jacket ($120, Pay in 4), and an Affirm couch ($900 over 6 months at 15% APR). All dates are relative to today, so the demo always shows:
@@ -90,8 +99,11 @@ components/             tabs, editors, UI primitives
 lib/
   engine/               deterministic financial engine + tests
   parse/                LLM output schema, normalization, rate limiter
+  bnpl-detect.ts        finds "4 payments of $X" offers in page text (extension)
+  verdict-copy.ts       verdict wording shared by the checkout demo and the extension
   sample-data.ts        date-relative demo persona and emails
   schemas.ts            zod schemas for persisted state
+extension/              Chrome extension (MV3): sync, detect, verdict card
 docs/                   screenshots
 DECISIONS.md            judgment calls made during the build
 ```
@@ -109,7 +121,7 @@ DECISIONS.md            judgment calls made during the build
 - **Email auto-import:** a read-only Gmail/Outlook connection that picks up new BNPL confirmations automatically.
 - **Unrecognized-new-loan alerts:** flag a BNPL plan you didn't open, as an early fraud signal.
 - **Plaid sync:** a real checking balance and detected recurring bills instead of manual entry.
-- **Browser checkout extension:** "Can I afford this?" right on the Pay in 4 button.
+- **Browser extension → Web Store:** the MVP in `extension/` works today. Next: a Chrome Web Store listing, Safari/iOS support, and more offer formats.
 - Plus tier: danger-day alerts and a weekly forecast email.
 
 ---

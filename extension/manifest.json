@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "SplitSafe — Know before you Pay in 4",
+  "version": "0.1.0",
+  "description": "Before you choose Pay in 4 at checkout, see whether your paycheck can cover it. Runs entirely in your browser.",
+  "permissions": ["storage"],
+  "action": { "default_title": "SplitSafe", "default_popup": "popup.html" },
+  "content_scripts": [
+    {
+      "matches": ["https://splitsafe-phi.vercel.app/*", "http://localhost/*"],
+      "js": ["sync.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*/*", "http://*/*", "file:///*"],
+      "exclude_matches": ["https://splitsafe-phi.vercel.app/*", "http://localhost/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
