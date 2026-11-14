@@ -111,7 +111,8 @@ export function sampleStatementCsv(today: ISODate, days = 75): string {
 
   const lines = ["Details,Posting Date,Description,Amount,Type,Balance,Check or Slip #"];
   for (const r of [...withBalance].reverse()) {
-    const type = r.amount > 0 ? "ACH_CREDIT" : /ZELLE|PMT|PAYMENTS|INSURANCE/.test(r.description) ? "ACH_DEBIT" : "DEBIT_CARD";
+    const type =
+      r.amount > 0 ? "ACH_CREDIT" : /TRANSFER/.test(r.description) ? "ACCT_XFER" : /ZELLE|PMT|PAYMENTS|INSURANCE/.test(r.description) ? "ACH_DEBIT" : "DEBIT_CARD";
     lines.push([r.amount > 0 ? "CREDIT" : "DEBIT", usDate(r.date), `"${r.description}"`, r.amount.toFixed(2), type, r.balance.toFixed(2), ""].join(","));
   }
   return lines.join("\n") + "\n";
